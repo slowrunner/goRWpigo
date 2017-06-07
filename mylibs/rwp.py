@@ -10,8 +10,6 @@ import myPDALib
 import myPyLib
 import time      # for test main
 
-import motorsClass.py
-
 
 
 # GoPiGo API SUMMARY
@@ -84,48 +82,55 @@ import motorsClass.py
 
 
 # ################### IMPLEMENTATION #######
-gopigo_status = '\x00\x00'       #  gopigo_status[0]= Encoder targeting status: 0=target reached
-                                 #  gopigo_status[1]= Timeout status: 0=timeout reached
-gopigo_speed = [0,0]
-gopigo_edges_per_rev = 18        #  
-gopigo_enc_tgt = [0,0,2 * gopigo_edges_per_rev]   
-gopigo_servo_angle = 90                                  
-gopigo_com_timeout = 10000  
+rwp_speeds = [0,0]
+rwp_edges_per_rev = 32        #  
+rwp_enc_tgt = [0,0,0]   
+rwp_servo_angle = 0                                  
+rwp_com_timeout = 10000  
+rwp_default_speed = 200
 
 debugLevel = 99		# 0 off, 1 some, 99 all    
  
 
 # ### Motor control functions:
 
-def fwd():    # Move the GoPiGo forward with PID (better control)
-    print "fwd() called"
+def fwd(speed=rwp_default_speed):    # Move the GoPiGo forward with PID (better control)
+    if (debugLevel): print "rwp:  fwd() called"
 
-def motor_fwd():    # Move the GoPiGo forward without PID
-    print "motor_fwd() called"
+    
+    
+
+def motor_fwd(speed=rwp_default_speed):    # Move the GoPiGo forward without PID
+    global rwp_speeds, drive_bias
+    if (debugLevel): print "rwp:  motor_fwd() called"
+    if (drive_bias > 0):  rwp_speeds = [speed, speed - drive_bias]
+    else: rwp_speeds = [speed - abs(drive_bias), speed]
+    motor(LMotorIndex, rwp_speeds[1])
+    motor(RMotorIndex, rwp_speeds[0])    
 	
 def bwd():    # Move the GoPiGo back with PID (better control)
-    print "bwd() called"
+    if (debugLevel): print "rwp:  bwd() called"
 	
 def motor_bwd():    # Move the GoPiGo back without PID
-    print "motor_bwd() called"
+    if (debugLevel): print "rwp:  motor_bwd() called"
 	
 def left():    # Turn GoPiGo Left slow (one motor off, better control)
-    print "left() called"
+    if (debugLevel): print "rwp:  left() called"
 	
 def left_rot():    # Rotate GoPiGo left in same position 
                    # (both motors moving in the opposite direction)
-    print "left_rot() called"
+    if (debugLevel): print "rwp:  left_rot() called"
 	
 def right():    # Turn GoPiGo right slow (one motor off, better control)
-    print "right() called"
+    if (debugLevel): print "rwp:  right() called"
 	
 def right_rot():    # Rotate GoPiGo right in same position 
                     # both motors moving in the opposite direction)
-    print "right_rot() called"
+    if (debugLevel): print "rwp:  right_rot() called"
 	
 def stop():    # Stop the GoPiGo
-    print "rwp.stop: motors_kill()"
-    motors_kill()
+    if (debugLevel): print "rwp:  rwp.stop: motors_coast()"
+    motors_coast()
 	
 
 # ### Motor speed Functions:
@@ -133,52 +138,52 @@ def stop():    # Stop the GoPiGo
 def increase_speed():    # Increase the speed of the GoPiGo by 10
     global gopigo_speed
     gopigo_speed = map(lambda x: x+10, gopigo_speed )
-    print "increase_speed() called"
-    print "gopigo_speed:",gopigo_speed
+    if (debugLevel): print "rwp:  increase_speed() called"
+    if (debugLevel): print "rwp:  gopigo_speed:",gopigo_speed
     
 	
 def decrease_speed():    # Decrease the speed of the GoPiGo by 10
     global gopigo_speed
     gopigo_speed = map(lambda x: x-10, gopigo_speed )
-    print "decrease_speed() called"
-    print "gopigo_speed:",gopigo_speed    
+    if (debugLevel): print "rwp:  decrease_speed() called"
+    if (debugLevel): print "rwp:  gopigo_speed:",gopigo_speed    
 
 	
 def set_left_speed(speed=200):    # Set speed of the left motor
     global gopigo_speed
     gopigo_speed[0] = speed
-    print "set_left_speed(%d) called" % speed
-    print "gopigo_speed:", gopigo_speed    
+    if (debugLevel): print "rwp:  set_left_speed(%d) called" % speed
+    if (debugLevel): print "rwp:  gopigo_speed:", gopigo_speed    
 	
 def set_right_speed(speed=200):    # Set speed of the right motor
     global gopigo_speed
     gopigo_speed[1] = speed
-    print "set_right_speed(%d) called" % speed
-    print "gopigo_speed:", gopigo_speed
+    if (debugLevel): print "rwp:  set_right_speed(%d) called" % speed
+    if (debugLevel): print "rwp:  gopigo_speed:", gopigo_speed
 	
 def set_speed(speed=200):    # Set speeds of both the motors
-    print "set_speed(%d) called" % speed
+    if (debugLevel): print "rwp:  set_speed(%d) called" % speed
     gopigo_speed = [speed,speed]
-    print "gopigo_speed:", gopigo_speed
+    if (debugLevel): print "rwp:  gopigo_speed:", gopigo_speed
 	
 
 # ### Encoder Functions:
 
 def enc_tgt(m1,m2,numEncPulses):    # Set encoder target to move the GoPiGo to a set distance
-    print "enc_tgt(m1=%d,m2=%d,numEncPulses=%d) called" % (m1,m2,numEncPulses)
+    if (debugLevel): print "rwp:  enc_tgt(m1=%d,m2=%d,numEncPulses=%d) called" % (m1,m2,numEncPulses)
     gopigo_enc_tgt = [m1, m2, numEncPulses]
 	
 def enable_encoders():    # Enable the encoders
-    print "enable_encoders() called"
+    if (debugLevel): print "rwp:  enable_encoders() called"
 	
 def disable_encoders():    # Disable the encoders
-    print "disable_encoders() called"
+    if (debugLevel): print "rwp:  disable_encoders() called"
 	
 
 # ### Ultrasonic ranger read:
 
 def us_dist(pin):    # Read distance from the ultrasonic sensor
-    print "us_dist(pin=%d) called" % pin
+    if (debugLevel): print "rwp:  us_dist(pin=%d) called" % pin
     return random.uniform(0,50)
 	
 
@@ -186,27 +191,27 @@ def us_dist(pin):    # Read distance from the ultrasonic sensor
 # ### LED control:
 
 def led(led,pwr):    # Set  LED to  power level
-    print "led() called"
+    if (debugLevel): print "rwp:  led() called"
 	
 def led_on(led):    # Turn  LED on
-    print "led_on() called"
+    if (debugLevel): print "rwp:  led_on() called"
 	
 def led_off(led):    # Turn LED off
-    print "led_off() called"
+    if (debugLevel): print "rwp:  led_off() called"
 	
 
 
 # ### Servo control:
 
 def enable_servo():    # Enables the servo
-    print "enable_servo() called"
+    if (debugLevel): print "rwp:  enable_servo() called"
 	
 def disable_servo():    # Disables the servo
-    print "disable_servo() called"
+    if (debugLevel): print "rwp:  disable_servo() called"
 	
 def servo(angle):    # Set servo position
     global gopiogo_servo_angle
-    print "servo(%d) called" % angle
+    if (debugLevel): print "rwp:  servo(%d) called" % angle
     gopigo_servo_angle = angle
 	
 
@@ -214,123 +219,91 @@ def servo(angle):    # Set servo position
 # ### Status from the GoPiGo:
 
 def volt():    # Read battery voltage in V
-    print "volt() called"
+    if (debugLevel): print "rwp:  volt() called"
     return 7.2
 	
 def fw_ver():    # Get the firmware version of the GoPiGo
-    print "fw_ver() called"
+    if (debugLevel): print "rwp:  fw_ver() called"
     return "Alan's gorwpigo.py 6Jun2017"
 	
 def enable_com_timeout(ms):    # Enable communication time-out
                                #  (stop the motors if no command received in the specified time-out)
     global gopigo_com_timeout
     gopigo_com_timeout = ms    
-    print "enable_com_timeout(ms=%d) called" % ms
+    if (debugLevel): print "rwp:  enable_com_timeout(ms=%d) called" % ms
 	
 def disable_com_timeout():    # Disable communication time-out
-    print "disable_com_timeout() called"
+    if (debugLevel): print "rwp:  disable_com_timeout() called"
 	
 def read_status():    # Read the status register on the GoPiGo
     global gopigo_status
-    print "read_status() called"
+    if (debugLevel): print "rwp:  read_status() called"
     return gopigo_status
 	
 def read_enc_status():    # Read encoder status
     global gopigo_status
-    print "read_enc_status() called"
+    if (debugLevel): print "rwp:  read_enc_status() called"
     return gopigo_status[0]
 	
 
 
 def read_timeout_status():    # Read timeout status
     global gopigo_status
-    print "read_timeout_status() called"
+    if (debugLevel): print "rwp:  read_timeout_status() called"
     return gopigo_status[1]
 	
     
-# ---------- ALAN's FUNCS ------
-def print_state():
-        global gopigo_status, gopigo_speed, gopigo_edges_per_rev, gopigo_enc_tgt, gopigo_com_timeout, gopigo_servo_angle
-        print "goRWpigo State Variables:"
-        print "gopigo_status: ", repr(gopigo_status)
-        print "gopigo_speed:", gopigo_speed
-        print "gopigo_edges_per_rev:", gopigo_edges_per_rev
-        print "gopigo_enc_tgt:", gopigo_enc_tgt
-        print "gopigo_com_timeout:", gopigo_com_timeout
-        print "gopigo_servo_angle:", gopigo_servo_angle
-
 
 # #############################################
 # Rug Warrior platform Definition and Vars
 
-global drive_bias
+
 
 LMotorIndex = 0     # LEFT MOTOR
-RMotorIndex = 1    # RIGHT MOTOR
+RMotorIndex = 1     # RIGHT MOTOR
 
-# Motor Pins 
-# SRV 6		Motor 1 Speed (PWM)
-# SRV 7		Motor 2 Speed (PWM)
-
-RMotorPin = 6
-LMotorPin = 7
+RMotorPin = 6   # SRV 6		Motor 1 Speed (PWM)
+LMotorPin = 7   # SRV 7		Motor 2 Speed (PWM)
 
 MotorPin = [7,6]  # MotorPin[0] Left, MotorPin[1] Right
 
-# DIO 12 (A4)	Motor 1 Dir A (0=coast 1=F/Brake)
-# DIO 13 (A5)	Motor 1 Dir B (0=coast 1=R/Brake)
-
-# DIO 14 (A6)	Motor 2 Dir A (0=coast 1=F/Brake)
-# DIO 15 (A7)	Motor 2 Dir B (0=coast 1=R/Brake)
-
-M1DirA = 12
-M1DirB = 13
-M2DirA = 14
-M2DirB = 15
+M1DirA = 12 # DIO 12 (A4)	Motor 1 Dir A (0=coast 1=F/Brake)
+M1DirB = 13 # DIO 13 (A5)	Motor 1 Dir B (0=coast 1=R/Brake)
+M2DirA = 14 # DIO 14 (A6)	Motor 2 Dir A (0=coast 1=F/Brake)
+M2DirB = 15 # DIO 15 (A7)	Motor 2 Dir B (0=coast 1=R/Brake)
 MotorDirA = [14,12]  # 0 left 1 right
 MotorDirB = [15,13]  # 0 left 1 right
 
-MinPwr2Move = 100
+MinPwr2Move = 100   # empirical minimum power to move with both wheels
 MaxPwr = 255
-
-# No two drive motors respond in exactly the same way to the same
-#   applied voltage.  Use the drive_bias term to correct for biases
-#   in your robot.  If your robot arcs to the right, make drive_bias
-#   positive, arcs to the left require a negative correction. 
-
-drive_bias = 0   # Open loop correction term for drive motors
-
+drive_bias = -5   # positive will drive right more than left
 
 # ### MOTORS_INIT()
-
-motorsInitialized = False
-
-def motors_init():   # set up the pwm and two dir pins for each motor
+motorsInitialized = False   # True after motor pins are configured once
+def motors_init():   # set up the two speed and four dir pins
     global motors_initialized
   
-    if (!motorsInitialized):
-        PDALib.pinMode(RMotorPin,PDALib.PWM)  # init motor1 speed control pin
-        PDALib.pinMode(LMotorPin,PDALib.PWM)  # init motor2 speed control pin 
+    if not motorsInitialized:
+        PDALib.pinMode(RMotorPin,PDALib.PWM)  # init rt-motor1  speed control pin
+        PDALib.pinMode(LMotorPin,PDALib.PWM)  # init lft-motor2 speed control pin 
 
-        PDALib.pinMode(M1DirA,PDALib.OUTPUT)  #init motor1 dirA/Fwd    enable
-        PDALib.pinMode(M1DirB,PDALib.OUTPUT)  #init motor1 dirB/Bkwd  enable
-        PDALib.pinMode(M2DirA,PDALib.OUTPUT)  #init motor2 dirA/Fwd    enable
-        PDALib.pinMode(M2DirB,PDALib.OUTPUT)  #init motor2 dirB/Bkwd  enable
+        PDALib.pinMode(M1DirA,PDALib.OUTPUT)  #init rt-motor1 dirA/Fwd   enable
+        PDALib.pinMode(M1DirB,PDALib.OUTPUT)  #init rt-motor1 dirB/Bkwd  enable
+        PDALib.pinMode(M2DirA,PDALib.OUTPUT)  #init lft-motor2 dirA/Fwd  enable
+        PDALib.pinMode(M2DirB,PDALib.OUTPUT)  #init lft-motor2 dirB/Bkwd enable
 
-        # init all direction pins to off
         PDALib.digitalWrite(M1DirA,0)  #set to off/coast
         PDALib.digitalWrite(M1DirB,0)  #set to off/coast
         PDALib.digitalWrite(M2DirA,0)  #set to off/coast
         PDALib.digitalWrite(M2DirB,0)  #set to off/coast
 
         # turn off the speed pins
-        PDALib.analogWrite(Motors.RMotor,0)  #set motor1 to zero speed 
-        PDALib.analogWrite(Motors.LMotor,0)  #set motor2 to zero speed
-        motors_initialized = True
+        PDALib.analogWrite(Motors.RMotor,0)  #set rt  (motor1,index 1) to zero speed 
+        PDALib.analogWrite(Motors.LMotor,0)  #set lft (motor2,index 0) to zero speed
+        motors_initialized = True   # Don't need to do this again
 
-# ### MOTORS_KILL()
-
-def motors_kill():
+# ### MOTORS_coast()
+def motors_coast():
     motors_init()	# make sure motors are initialized
     # turn off the speed pin 
     PDALib.analogWrite(RMotorPin,0)  #set motor1 to coast (zero speed)  
@@ -339,9 +312,8 @@ def motors_kill():
 
 # ### MOTOR(INDEX,VEL)
 
-def motor(index,vel):  #mtr 0=lft, 1=rt, +/-100
-    vel = myPyLib.clamp(vel,-100,100)
-    avel = vel
+def motor(index,vel):  #mtr 0=lft, 1=rt, +/-255
+    avel = myPyLib.clamp(vel,-255,255)  # adjust velocity to limits
     if (vel == 0):
         PDALib.analogWrite(MotorPin[index],0)  #set motor to zero speed
         return
