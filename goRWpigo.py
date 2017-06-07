@@ -5,6 +5,7 @@
 import time   # for test main
 from mylibs import rwp
 import random   # to simulate until implemented
+from mylibs import myPyLib
 
 
 # GoPiGo API
@@ -130,18 +131,36 @@ def stop():    # Stop the GoPiGo
 
 # ### Motor speed Functions:
 
-def increase_speed():    # Increase the speed of the GoPiGo by 10
+def increase_speed():    # Increase the speed of moving motors by 10
     global gopigo_speed
-    gopigo_speed = map(lambda x: x+10, gopigo_speed )
+    if (((abs(gopigo_speed[0])+10)<245) and ((abs(gopigo_speed[1])+10<245))):
+        # room to increase speed
+        if (gopigo_speed[0]>0):  # right
+            gopigo_speed[0]+=10
+            gopigo_speed[0] = myPyLib.clamp(gopigo_speed[0],-255,255)  # adjust velocity to limits
+        elif (gopigo_speed[0]<0):
+            gopigo_speed[0]-=10
+            gopigo_speed[0] = myPyLib.clamp(gopigo_speed[0],-255,255)  # adjust velocity to limits
+        # else rt speed is 0, no changed   
+    
+        if (gopigo_speed[1]>0):  # left
+            gopigo_speed[1]+=10
+            gopigo_speed[1] = myPyLib.clamp(gopigo_speed[1],-255,255)  # adjust velocity to limits
+        elif (gopigo_speed[1]<0):
+            gopigo_speed[1]-=10
+            gopigo_speed[1] = myPyLib.clamp(gopigo_speed[1],-255,255)  # adjust velocity to limits
+        # else lft speed is 0, no changed   
+    
     if (debugLevel): 
         print "goRWpigo:increase_speed() called"
         print "goRWpigo:  gopigo_speed:",gopigo_speed
-    rwp.set_speed(gopigo_speed)    
     
 	
 def decrease_speed():    # Decrease the speed of the GoPiGo by 10
     global gopigo_speed
     gopigo_speed = map(lambda x: x-10, gopigo_speed )
+    gopigo_speed[0] = myPyLib.clamp(gopigo_speed[0],-255,255)  # adjust velocity to limits
+    gopigo_speed[1] = myPyLib.clamp(gopigo_speed[1],-255,255)  # adjust velocity to limits
     if (debugLevel): 
         print "goRWpigo:decrease_speed() called"
         print "goRWpigo:  gopigo_speed:",gopigo_speed    
@@ -208,7 +227,7 @@ def disable_servo():    # Disables the servo
     if (debugLevel): print "goRWpigo:disable_servo() called"
 	
 def servo(angle):    # Set servo position
-    global gopiogo_servo_angle
+    global gopigo_servo_angle
     if (debugLevel): print "goRWpigo:servo(%d) called" % angle
     gopigo_servo_angle = angle
 	
@@ -256,7 +275,9 @@ def print_state():
         global gopigo_status, gopigo_speed, gopigo_edges_per_rev, gopigo_enc_tgt, gopigo_com_timeout, gopigo_servo_angle
         print "goRWpigo State Variables:"
         print "gopigo_status: ", repr(gopigo_status)
-        print "gopigo_speed:", gopigo_speed
+        print "gopigo_speed: [rt,lft]", gopigo_speed
+        print "rwp_speeds:   [rt,lft]", repr(rwp.rwp_speeds)
+        print "rwp.drive_bias:", rwp.drive_bias
         print "gopigo_edges_per_rev:", gopigo_edges_per_rev
         print "gopigo_enc_tgt:", gopigo_enc_tgt
         print "gopigo_com_timeout:", gopigo_com_timeout
@@ -266,9 +287,96 @@ def print_state():
 # ############ TEST MAIN ######################
 	
 def main():
+    servo_range = [2,3,4,5,6,7,8]
+
+    def key_input(event):
+        key_press = event  # ALAN  for Tkinter was = event.keysym.lower()
+        print(key_press)
+
+        if key_press == '?':
+            print """
+            w: fwd
+            s: bwd
+            a: left
+            d: right
+            q: rotate left
+            e: rotate right
+            space: stop
+            u: ultrasonic dist
+            2..8: servo position
+            +: increase speed
+            -: decrease speed
+            >: increase drive_bias "rt wheel"
+            <: decrease drive_bias             
+            =: print all variables
+            
+            ctrl-c: quit
+        
+            """
+        if key_press == 'w':
+            fwd()
+        elif key_press == 's':
+            bwd()
+        elif key_press == 'a':
+            left()
+        elif key_press == 'd':
+            right()
+        elif key_press == 'q':
+            left_rot()
+        elif key_press == 'e':
+            right_rot()
+        elif key_press == ' ':     # was 'space'
+            stop()
+        elif key_press == '+':
+            increase_speed()
+            print "rwp_speeds (right) [%d, %d] (left)" % (rwp.rwp_speeds[0],rwp.rwp_speeds[1])
+        elif key_press == '-':
+            decrease_speed()
+            print "rwp_speeds (right) [%d, %d] (left)" % (rwp.rwp_speeds[0],rwp.rwp_speeds[1])
+        elif key_press == 'u':
+            print(us_dist(15))
+        elif key_press == '=':
+            print_state()
+        elif key_press == '>':
+            rwp.drive_bias += 1
+            print "drive_bias now %d" % rwp.drive_bias
+        elif key_press == '<':
+            rwp.drive_bias -= 1
+            print "drive_bias now %d" % rwp.drive_bias
+
+
+        elif key_press.isdigit():
+            if int(key_press) in servo_range:
+                enable_servo()
+                servo(int(key_press)*14)
+                time.sleep(1)
+                disable_servo()
+
+    # command = tk.Tk()
+    # command.bind_all('<Key>', key_input)  # ALAN  '' changed to '<Key>'
+    # command.mainloop()
+
+    ### created for command line execution cntl-C to quit
+    print "--- goRWpigo TEST MAIN STARTED"
+
+    while True:
+      event=raw_input("cmd? ") 
+      key_input(event)
+
+
+
+
+
+
+
+
+
+
+
+
+'''
     testspeed = 100  # speed for teseting  0-255 default 200
     angle = 45   # 45 deg left for servo test
-    print "--- goRWpigo TEST MAIN STARTED"
     fwd()    # Move the GoPiGo forward with PID (better control)
     time.sleep(1); stop()
 
@@ -352,8 +460,7 @@ def main():
  # ### Alan's funcs:
 
     print_state() 
-    
-    print "--- goRWpigo TEST MAIN Completed"
+'''    
 	   
 	   
 	   

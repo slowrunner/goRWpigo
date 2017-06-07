@@ -16,6 +16,7 @@ class SpiDev():
         
     def xfer(self,args):
         if (debugLevel): print "spidev:xfer(%s) called" % ' '.join(str(e) for e in args)
+        return [0,0,0,0]
         
     def close(self):    
         if (debugLevel): print "spidev:close called"    

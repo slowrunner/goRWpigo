@@ -5,7 +5,7 @@
 #             Primitives for goRWpigo interface
 #
 
-import PDALib
+
 import myPDALib
 import myPyLib
 import time      # for test main
@@ -96,6 +96,7 @@ debugLevel = 99		# 0 off, 1 some, 99 all
 
 def fwd(speed=rwp_default_speed):    # Move the GoPiGo forward with PID (better control)
     if (debugLevel): print "rwp:  fwd() called"
+    motor_fwd(speed)                 # no PID for time being
 
     
     
@@ -103,28 +104,34 @@ def fwd(speed=rwp_default_speed):    # Move the GoPiGo forward with PID (better 
 def motor_fwd(speed=rwp_default_speed):    # Move the GoPiGo forward without PID
     global rwp_speeds, drive_bias
     if (debugLevel): print "rwp:  motor_fwd() called"
-    if (drive_bias > 0):  rwp_speeds = [speed, speed - drive_bias]
-    else: rwp_speeds = [speed - abs(drive_bias), speed]
+    if (drive_bias > 0):  rwp_speeds = [speed, speed - drive_bias]  #decrease left by bias
+    else: rwp_speeds = [speed - abs(drive_bias), speed]             #decrease right by bias
     motor(LMotorIndex, rwp_speeds[1])
     motor(RMotorIndex, rwp_speeds[0])    
 	
-def bwd():    # Move the GoPiGo back with PID (better control)
+def bwd(speed=rwp_default_speed):    # Move the GoPiGo back with PID (better control)
     if (debugLevel): print "rwp:  bwd() called"
+    motor_bwd(speed)                 # no PID for time being
 	
-def motor_bwd():    # Move the GoPiGo back without PID
+def motor_bwd(speed=rwp_default_speed):    # Move the GoPiGo back without PID
+    global rwp_speeds, drive_bias
     if (debugLevel): print "rwp:  motor_bwd() called"
+    if (drive_bias < 0):  rwp_speeds = [speed, speed - drive_bias]  #e.g. -200 - -5=-195 decreased 
+    else: rwp_speeds = [speed + drive_bias, speed]
+    motor(LMotorIndex, rwp_speeds[1])
+    motor(RMotorIndex, rwp_speeds[0])    
 	
-def left():    # Turn GoPiGo Left slow (one motor off, better control)
+def left(speed=rwp_default_speed):    # Turn GoPiGo Left slow (one motor off, better control)
     if (debugLevel): print "rwp:  left() called"
 	
-def left_rot():    # Rotate GoPiGo left in same position 
+def left_rot(speed=rwp_default_speed):    # Rotate GoPiGo left in same position 
                    # (both motors moving in the opposite direction)
     if (debugLevel): print "rwp:  left_rot() called"
 	
-def right():    # Turn GoPiGo right slow (one motor off, better control)
+def right(speed=rwp_default_speed):    # Turn GoPiGo right slow (one motor off, better control)
     if (debugLevel): print "rwp:  right() called"
 	
-def right_rot():    # Rotate GoPiGo right in same position 
+def right_rot(speed=rwp_default_speed):    # Rotate GoPiGo right in same position 
                     # both motors moving in the opposite direction)
     if (debugLevel): print "rwp:  right_rot() called"
 	
@@ -136,17 +143,22 @@ def stop():    # Stop the GoPiGo
 # ### Motor speed Functions:
 
 def increase_speed():    # Increase the speed of the GoPiGo by 10
-    global gopigo_speed
-    gopigo_speed = map(lambda x: x+10, gopigo_speed )
-    if (debugLevel): print "rwp:  increase_speed() called"
-    if (debugLevel): print "rwp:  gopigo_speed:",gopigo_speed
+    global rwp_speed
+    rwp_speed_new = map(lambda x: x+10, rwp_speed )
+    rwp_speed[0] = myPyLib.clamp(rwp_speed_new[0],-255,255)  # adjust velocity to limits
+    rwp_speed[1] = myPyLib.clamp(rwp_speed_new[1],-255,255)  # adjust velocity to limits
+    
+    if (debugLevel): 
+        print "rwp:  increase_speed() called"
+        print "rwp:  rwp_speed: [rt,lft]", rwp_speed
     
 	
 def decrease_speed():    # Decrease the speed of the GoPiGo by 10
-    global gopigo_speed
-    gopigo_speed = map(lambda x: x-10, gopigo_speed )
-    if (debugLevel): print "rwp:  decrease_speed() called"
-    if (debugLevel): print "rwp:  gopigo_speed:",gopigo_speed    
+    global rwp_speed
+    gopigo_speed = map(lambda x: x-10, rwp_speed )
+    if (debugLevel): 
+        print "rwp:  decrease_speed() called"
+        print "rwp:  rwp_speed: [rt,lft]", repr(rwp_speed)    
 
 	
 def set_left_speed(speed=200):    # Set speed of the left motor
@@ -161,10 +173,11 @@ def set_right_speed(speed=200):    # Set speed of the right motor
     if (debugLevel): print "rwp:  set_right_speed(%d) called" % speed
     if (debugLevel): print "rwp:  gopigo_speed:", gopigo_speed
 	
-def set_speed(speed=200):    # Set speeds of both the motors
-    if (debugLevel): print "rwp:  set_speed(%d) called" % speed
-    gopigo_speed = [speed,speed]
-    if (debugLevel): print "rwp:  gopigo_speed:", gopigo_speed
+def set_speed(speeds=[rwp_default_speed,rwp_default_speed]):    # Set speeds of both the motors
+    global rwp_speeds
+    if (debugLevel): 
+        print "rwp:  set_speed([%d,%d]) called" % (speeds[0],speeds[1])
+        rwp_speeds = speeds
 	
 
 # ### Encoder Functions:
@@ -284,30 +297,30 @@ def motors_init():   # set up the two speed and four dir pins
     global motors_initialized
   
     if not motorsInitialized:
-        PDALib.pinMode(RMotorPin,PDALib.PWM)  # init rt-motor1  speed control pin
-        PDALib.pinMode(LMotorPin,PDALib.PWM)  # init lft-motor2 speed control pin 
+        myPDALib.pinMode(RMotorPin,myPDALib.PWM)  # init rt-motor1  speed control pin
+        myPDALib.pinMode(LMotorPin,myPDALib.PWM)  # init lft-motor2 speed control pin 
 
-        PDALib.pinMode(M1DirA,PDALib.OUTPUT)  #init rt-motor1 dirA/Fwd   enable
-        PDALib.pinMode(M1DirB,PDALib.OUTPUT)  #init rt-motor1 dirB/Bkwd  enable
-        PDALib.pinMode(M2DirA,PDALib.OUTPUT)  #init lft-motor2 dirA/Fwd  enable
-        PDALib.pinMode(M2DirB,PDALib.OUTPUT)  #init lft-motor2 dirB/Bkwd enable
+        myPDALib.pinMode(M1DirA,myPDALib.OUTPUT)  #init rt-motor1 dirA/Fwd   enable
+        myPDALib.pinMode(M1DirB,myPDALib.OUTPUT)  #init rt-motor1 dirB/Bkwd  enable
+        myPDALib.pinMode(M2DirA,myPDALib.OUTPUT)  #init lft-motor2 dirA/Fwd  enable
+        myPDALib.pinMode(M2DirB,myPDALib.OUTPUT)  #init lft-motor2 dirB/Bkwd enable
 
-        PDALib.digitalWrite(M1DirA,0)  #set to off/coast
-        PDALib.digitalWrite(M1DirB,0)  #set to off/coast
-        PDALib.digitalWrite(M2DirA,0)  #set to off/coast
-        PDALib.digitalWrite(M2DirB,0)  #set to off/coast
+        myPDALib.digitalWrite(M1DirA,0)  #set to off/coast
+        myPDALib.digitalWrite(M1DirB,0)  #set to off/coast
+        myPDALib.digitalWrite(M2DirA,0)  #set to off/coast
+        myPDALib.digitalWrite(M2DirB,0)  #set to off/coast
 
         # turn off the speed pins
-        PDALib.analogWrite(Motors.RMotor,0)  #set rt  (motor1,index 1) to zero speed 
-        PDALib.analogWrite(Motors.LMotor,0)  #set lft (motor2,index 0) to zero speed
+        myPDALib.analogWrite(RMotorPin,0)  #set rt  (motor1,index 1) to zero speed 
+        myPDALib.analogWrite(LMotorPin,0)  #set lft (motor2,index 0) to zero speed
         motors_initialized = True   # Don't need to do this again
 
 # ### MOTORS_coast()
 def motors_coast():
     motors_init()	# make sure motors are initialized
     # turn off the speed pin 
-    PDALib.analogWrite(RMotorPin,0)  #set motor1 to coast (zero speed)  
-    PDALib.analogWrite(LMotorPin,0)  #set motor2 to coast (zero speed)
+    myPDALib.analogWrite(RMotorPin,0)  #set motor1 to coast (zero speed)  
+    myPDALib.analogWrite(LMotorPin,0)  #set motor2 to coast (zero speed)
 
 
 # ### MOTOR(INDEX,VEL)
@@ -315,20 +328,20 @@ def motors_coast():
 def motor(index,vel):  #mtr 0=lft, 1=rt, +/-255
     avel = myPyLib.clamp(vel,-255,255)  # adjust velocity to limits
     if (vel == 0):
-        PDALib.analogWrite(MotorPin[index],0)  #set motor to zero speed
+        myPDALib.analogWrite(MotorPin[index],0)  #set motor to zero speed
         return
     if (vel > 0):  # set forward
-        PDALib.digitalWrite(MotorDirA[index],1)  #set to fwd
-        PDALib.digitalWrite(MotorDirB[index],0)  #set to off/coast
+        myPDALib.digitalWrite(MotorDirA[index],1)  #set to fwd
+        myPDALib.digitalWrite(MotorDirB[index],0)  #set to off/coast
         avel = vel
     else:
         avel = -vel        
-        PDALib.digitalWrite(MotorDirA[index],0)  #set to off/coast
-        PDALib.digitalWrite(MotorDirB[index],1)  #set to bwd
+        myPDALib.digitalWrite(MotorDirA[index],0)  #set to off/coast
+        myPDALib.digitalWrite(MotorDirB[index],1)  #set to bwd
   
     # compute pct to pwr
     pwr = int( (MaxPwr - MinPwr2Move) * avel/100.0 + MinPwr2Move)    
-    PDALib.analogWrite(MotorPin[index], pwr)  #set motor pwr level
+    myPDALib.analogWrite(MotorPin[index], pwr)  #set motor pwr level
 
 # ### DRIVE(TRANS_VEL, ROT_VEL)
 
@@ -348,8 +361,8 @@ def driveb(trans, rot):    # Correct for motor bias
     motor(LMotorIndex, trans - (rot + rot_bias));
     motor(RMotorIndex,trans + (rot + rot_bias))
 
-# Left Encoder - DIO B4 - "PDALib.pin 20"
-# Right Encoder- DIO B3 - "PDALib.pin 19" 
+# Left Encoder - DIO B4 - "myPDALib.pin 20"
+# Right Encoder- DIO B3 - "myPDALib.pin 19" 
 
     
     

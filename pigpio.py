@@ -15,3 +15,5 @@ class pi():
 
     def set_PWM_frequency(self,pin,freq):
             if (debugLevel): print "pigpio:set_PWM_frequency(%d,%d)"  % (pin,freq)        
+    def set_PWM_dutycycle(self,pin,freq):
+            if (debugLevel): print "pigpio:set_PWM_dutycycle(%d,%d)"  % (pin,freq)        
