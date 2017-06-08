@@ -77,7 +77,8 @@ from enum import Enum
 
 
 # ################### IMPLEMENTATION #######
-gopigo_motor_modes = Enum('gopigo_motor_modes','init stop fwd bwd left right left_rot right_rot')
+#gopigo_motor_modes = Enum('gopigo_motor_modes','init stop fwd bwd left right left_rot right_rot')
+gopigo_motor_modes = Enum('init','stop','fwd','bwd','left','right','left_rot','right_rot')
 gopigo_motor_mode = gopigo_motor_modes.init
 gopigo_status = '\x00\x00'       #  gopigo_status[0]= Encoder targeting status: 0=target reached
                                  #  gopigo_status[1]= Timeout status: 0=timeout reached
