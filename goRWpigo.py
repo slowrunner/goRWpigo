@@ -78,7 +78,18 @@ from enum import Enum
 
 # ################### IMPLEMENTATION #######
 #gopigo_motor_modes = Enum('gopigo_motor_modes','init stop fwd bwd left right left_rot right_rot')
-gopigo_motor_modes = Enum('init','stop','fwd','bwd','left','right','left_rot','right_rot')
+#gopigo_motor_modes = Enum('init','stop','fwd','bwd','left','right','left_rot','right_rot')
+# sudo pip install enum34  to give python 3.4 compatible Enum type
+class gopigo_motor_modes(Enum):
+    init = 0
+    stop = 1
+    fwd  = 2
+    bwd  = 3
+    left = 4
+    right = 5
+    left_rot = 6
+    right_rot = 7
+    
 gopigo_motor_mode = gopigo_motor_modes.init
 gopigo_status = '\x00\x00'       #  gopigo_status[0]= Encoder targeting status: 0=target reached
                                  #  gopigo_status[1]= Timeout status: 0=timeout reached
