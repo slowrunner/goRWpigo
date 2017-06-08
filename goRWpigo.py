@@ -6,6 +6,7 @@ import time   # for test main
 from mylibs import rwp
 import random   # to simulate until implemented
 from mylibs import myPyLib
+from enum import Enum
 
 
 # GoPiGo API
@@ -76,56 +77,84 @@ from mylibs import myPyLib
 
 
 # ################### IMPLEMENTATION #######
+gopigo_motor_modes = Enum('gopigo_motor_modes','init stop fwd bwd left right left_rot right_rot')
+gopigo_motor_mode = gopigo_motor_modes.init
 gopigo_status = '\x00\x00'       #  gopigo_status[0]= Encoder targeting status: 0=target reached
                                  #  gopigo_status[1]= Timeout status: 0=timeout reached
-gopigo_speed = [0,0]             #  [0]=right  [1]=left  (backwards from looking at it)
-gopigo_edges_per_rev = 18        #  
-gopigo_enc_tgt = [0,0,2 * gopigo_edges_per_rev]   
+gopigo_speed = 0                 #  0-255
+gopigo_enc_1_rev = 18            #  
+gopigo_enc_tgt = [0,0,2 * gopigo_enc_1_rev]   
 gopigo_servo_angle = 90                                  
 gopigo_com_timeout = 10000       
 debugLevel = 1                  # 0=off 1=some  99=all
 gopigo_default_speed = 200
+gopigo_default_turn_speed = 110
 
 # ### Motor control functions:
 
 def fwd(speed=gopigo_default_speed):    # Move the GoPiGo forward with PID (better control)
-    global gopigo_speed
+    global gopigo_speed,gopigo_motor_modes, gopigo_motor_mode
     if (debugLevel): print "goRWpigo:  fwd() called"
-    gopigo_speed = [speed, speed]
+    gopigo_speed = speed
+    gopigo_motor_mode=gopigo_motor_modes.fwd
     rwp.fwd(speed)
 
 def motor_fwd(speed=gopigo_default_speed):    # Move the GoPiGo forward without PID
+    global gopigo_speed,gopigo_motor_modes, gopigo_motor_mode
     if (debugLevel): print "goRWpigo:  motor_fwd() called"
+    gopigo_speed = speed
+    gopigo_motor_mode=gopigo_motor_modes.fwd
     rwp.motor_fwd(speed)
 	
 def bwd(speed=gopigo_default_speed):    # Move the GoPiGo back with PID (better control)
+    global gopigo_speed,gopigo_motor_modes, gopigo_motor_mode
     if (debugLevel): print "goRWpigo:  bwd() called"
+    gopigo_speed = speed
+    gopigo_motor_mode=gopigo_motor_modes.bwd
     rwp.motor_bwd(speed)
 	
 def motor_bwd(speed=gopigo_default_speed):    # Move the GoPiGo back without PID
+    global gopigo_speed,gopigo_motor_modes, gopigo_motor_mode
     if (debugLevel): print "goRWpigo:  motor_bwd() called"
+    gopigo_speed = speed
+    gopigo_motor_mode=gopigo_motor_modes.bwd
     rwp.motor_bwd(speed)
 	
-def left(speed=gopigo_default_speed):    # Turn GoPiGo Left slow (one motor off, better control)
+def left(speed=gopigo_default_turn_speed):    # Turn GoPiGo Left slow (one motor off, better control)
+    global gopigo_speed,gopigo_motor_modes, gopigo_motor_mode
     if (debugLevel): print "goRWpigo:  left() called"
+    gopigo_speed = speed
+    gopigo_motor_mode=gopigo_motor_modes.left
     rwp.left(speed)
 	
-def left_rot(speed=gopigo_default_speed):    # Rotate GoPiGo left in same position 
+def left_rot(speed=gopigo_default_turn_speed):    # Rotate GoPiGo left in same position 
+    global gopigo_speed,gopigo_motor_modes, gopigo_motor_mode
                    # (both motors moving in the opposite direction)
     if (debugLevel): print "goRWpigo:  left_rot() called"
+    gopigo_speed = speed
+    gopigo_motor_mode=gopigo_motor_modes.left_rot
     rwp.left_rot(speed)
 	
-def right(speed=gopigo_default_speed):    # Turn GoPiGo right slow (one motor off, better control)
+def right(speed=gopigo_default_turn_speed):    # Turn GoPiGo right slow (one motor off, better control)
+    global gopigo_speed,gopigo_motor_modes, gopigo_motor_mode
     if (debugLevel): print "goRWpigo:  right() called"
+    gopigo_speed = speed
+    gopigo_motor_mode=gopigo_motor_modes.right
     rwp.right(speed)
 	
-def right_rot(speed=gopigo_default_speed):    # Rotate GoPiGo right in same position 
+def right_rot(speed=gopigo_default_turn_speed):    # Rotate GoPiGo right in same position 
+    global gopigo_speed,gopigo_motor_modes, gopigo_motor_mode
                     # both motors moving in the opposite direction)
     if (debugLevel): print "goRWpigo:  right_rot() called"
+    gopigo_speed = speed
+    gopigo_motor_mode=gopigo_motor_modes.right_rot
     rwp.right_rot(speed)
 	
 def stop():    # Stop the GoPiGo
+    global gopigo_speed,gopigo_motor_modes, gopigo_motor_mode
     if (debugLevel): print "goRWpigo:  stop() called"
+    gopigo_speed=0
+    gopigo_motor_mode=gopigo_motor_modes.stop
     rwp.stop()
 	
 
@@ -133,55 +162,42 @@ def stop():    # Stop the GoPiGo
 
 def increase_speed():    # Increase the speed of moving motors by 10
     global gopigo_speed
-    if (((abs(gopigo_speed[0])+10)<245) and ((abs(gopigo_speed[1])+10<245))):
-        # room to increase speed
-        if (gopigo_speed[0]>0):  # right
-            gopigo_speed[0]+=10
-            gopigo_speed[0] = myPyLib.clamp(gopigo_speed[0],-255,255)  # adjust velocity to limits
-        elif (gopigo_speed[0]<0):
-            gopigo_speed[0]-=10
-            gopigo_speed[0] = myPyLib.clamp(gopigo_speed[0],-255,255)  # adjust velocity to limits
-        # else rt speed is 0, no changed   
-    
-        if (gopigo_speed[1]>0):  # left
-            gopigo_speed[1]+=10
-            gopigo_speed[1] = myPyLib.clamp(gopigo_speed[1],-255,255)  # adjust velocity to limits
-        elif (gopigo_speed[1]<0):
-            gopigo_speed[1]-=10
-            gopigo_speed[1] = myPyLib.clamp(gopigo_speed[1],-255,255)  # adjust velocity to limits
-        # else lft speed is 0, no changed   
-    
+    gopigo_speed = myPyLib.clamp(gopigo_speed + 10,0,255)  # adjust velocity to limits
     if (debugLevel): 
         print "goRWpigo:increase_speed() called"
         print "goRWpigo:  gopigo_speed:",gopigo_speed
+    rwp.increase_speed()
     
 	
 def decrease_speed():    # Decrease the speed of the GoPiGo by 10
     global gopigo_speed
-    gopigo_speed = map(lambda x: x-10, gopigo_speed )
-    gopigo_speed[0] = myPyLib.clamp(gopigo_speed[0],-255,255)  # adjust velocity to limits
-    gopigo_speed[1] = myPyLib.clamp(gopigo_speed[1],-255,255)  # adjust velocity to limits
+    gopigo_speed = myPyLib.clamp(gopigo_speed - 10,0,255)  # adjust velocity to limits
     if (debugLevel): 
         print "goRWpigo:decrease_speed() called"
         print "goRWpigo:  gopigo_speed:",gopigo_speed    
-    rwp.set_speed(gopigo_speed)
+    rwp.decrease_speed()
 	
 def set_left_speed(speed=gopigo_default_speed):    # Set speed of the left motor
     global gopigo_speed
-    gopigo_speed[0] = speed
-    if (debugLevel): print "goRWpigo:set_left_speed(%d) called" % speed
-    if (debugLevel): print "goRWpigo:  gopigo_speed:", gopigo_speed    
+    gopigo_speed = speed
+    if (debugLevel):
+        print "goRWpigo:set_left_speed(%d) called" % speed
+        print "goRWpigo:  gopigo_speed:", gopigo_speed
+    rwp.set_left_speed(speed)
 	
 def set_right_speed(speed=gopigo_default_speed):    # Set speed of the right motor
     global gopigo_speed
-    gopigo_speed[1] = speed
-    if (debugLevel): print "goRWpigo:set_right_speed(%d) called" % speed
-    if (debugLevel): print "goRWpigo:  gopigo_speed:", gopigo_speed
+    gopigo_speed = speed
+    if (debugLevel):
+        print "goRWpigo:set_right_speed(%d) called" % speed
+        print "goRWpigo:  gopigo_speed:", gopigo_speed
+    rwp.set_right_speed(speed)
 	
 def set_speed(speed=gopigo_default_speed):    # Set speeds of both the motors
     if (debugLevel): print "goRWpigo:set_speed(%d) called" % speed
-    gopigo_speed = [speed,speed]
+    gopigo_speed = speed
     if (debugLevel): print "goRWpigo:gopigo_speed:", gopigo_speed
+    rwp.set_speed(speed)
 	
 
 # ### Encoder Functions:
@@ -272,14 +288,15 @@ def read_timeout_status():    # Read timeout status
     
 # ---------- ALAN's FUNCS ------
 def print_state():
-        global gopigo_status, gopigo_speed, gopigo_edges_per_rev, gopigo_enc_tgt, gopigo_com_timeout, gopigo_servo_angle
+        global gopigo_status, gopigo_speed, gopigo_enc_1_rev, gopigo_enc_tgt, gopigo_com_timeout, gopigo_servo_angle
         print "goRWpigo State Variables:"
-        print "gopigo_status: ", repr(gopigo_status)
-        print "gopigo_speed: [rt,lft]", gopigo_speed
-        print "rwp_speeds:   [rt,lft]", repr(rwp.rwp_speeds)
-        print "rwp.drive_bias:", rwp.drive_bias
-        print "gopigo_edges_per_rev:", gopigo_edges_per_rev
-        print "gopigo_enc_tgt:", gopigo_enc_tgt
+        print "gopigo_status:    ", repr(gopigo_status)
+        print "gopigo_motor_mode:", gopigo_motor_mode
+        print "gopigo_speed:     ", gopigo_speed
+        print "rwp_speeds:lft,rt ", repr(rwp.rwp_speeds)
+        print "rwp.drive_bias:   ", rwp.drive_bias
+        print "gopigo_enc_1_rev: ", gopigo_enc_1_rev
+        print "gopigo_enc_tgt:   ", gopigo_enc_tgt
         print "gopigo_com_timeout:", gopigo_com_timeout
         print "gopigo_servo_angle:", gopigo_servo_angle
     
@@ -309,6 +326,7 @@ def main():
             >: increase drive_bias "rt wheel"
             <: decrease drive_bias             
             =: print all variables
+            v: do set_speed(125), set_left(0), set_right(0)
             
             ctrl-c: quit
         
@@ -329,28 +347,29 @@ def main():
             stop()
         elif key_press == '+':
             increase_speed()
-            print "rwp_speeds (right) [%d, %d] (left)" % (rwp.rwp_speeds[0],rwp.rwp_speeds[1])
         elif key_press == '-':
             decrease_speed()
-            print "rwp_speeds (right) [%d, %d] (left)" % (rwp.rwp_speeds[0],rwp.rwp_speeds[1])
         elif key_press == 'u':
             print(us_dist(15))
         elif key_press == '=':
             print_state()
         elif key_press == '>':
             rwp.drive_bias += 1
-            print "drive_bias now %d" % rwp.drive_bias
         elif key_press == '<':
             rwp.drive_bias -= 1
-            print "drive_bias now %d" % rwp.drive_bias
-
-
         elif key_press.isdigit():
             if int(key_press) in servo_range:
                 enable_servo()
                 servo(int(key_press)*14)
                 time.sleep(1)
                 disable_servo()
+        elif key_press == 'v':
+            set_speed(125)
+            time.sleep(3)
+            set_left_speed(0)
+            time.sleep(3)
+            set_right_speed(0)
+            
 
     # command = tk.Tk()
     # command.bind_all('<Key>', key_input)  # ALAN  '' changed to '<Key>'
