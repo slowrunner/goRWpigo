@@ -96,7 +96,7 @@ debugLevel = 99		# 0 off, 1 some, 99 all
 # ### Motor control functions:
 
 def fwd(speed=rwp_default_speed):    # Move the GoPiGo forward with PID (better control)
-    if (debugLevel): print "rwp:  fwd() called"
+    if (debugLevel): print "rwp:  fwd(%d) called" % speed
     motor_fwd(speed)                 # no PID for time being
 
     
@@ -104,9 +104,10 @@ def fwd(speed=rwp_default_speed):    # Move the GoPiGo forward with PID (better 
 
 def motor_fwd(speed=rwp_default_speed):    # Move the GoPiGo forward without PID
     global rwp_speeds, drive_bias
-    if (debugLevel): print "rwp:  motor_fwd() called"
+    if (debugLevel): print "rwp:  motor_fwd(%d) called" % speed
     if (drive_bias > 0):  rwp_speeds = [speed - drive_bias, speed]  #decrease left by bias
     else: rwp_speeds = [speed, speed - abs(drive_bias)]             #decrease right by bias
+    if (debugLevel): print "rwp:motor_fwd: rwp_speeds=",rwp_speeds
     motor(LMotorIndex, rwp_speeds[0])
     motor(RMotorIndex, rwp_speeds[1])    
 	
