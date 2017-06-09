@@ -5,6 +5,7 @@
 #             
 #
 debugLevel = 1
+
 FALLING_EDGE = 0
 RISING_EDGE  = 1
 EITHER_EDGE  = 2
