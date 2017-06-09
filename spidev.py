@@ -5,7 +5,7 @@
 #             
 #
 
-debugLevel = 1
+debugLevel = 0
 
 class SpiDev():
     def __init__(self):
