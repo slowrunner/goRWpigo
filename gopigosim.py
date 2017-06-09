@@ -4,6 +4,7 @@
 
 import time   # for test main
 import random  #randint(0,9)  0..9  uniform(0,50) 0.000 to 50.000
+debugLevel = 1
 
 
 # GoPiGo API
@@ -74,13 +75,15 @@ import random  #randint(0,9)  0..9  uniform(0,50) 0.000 to 50.000
 
 
 # ################### IMPLEMENTATION #######
-gopigo_status = '\x00\x00'       #  gopigo_status[0]= Encoder targeting status: 0=target reached
+gopigo_status = [0,0]       #  gopigo_status[0]= Encoder targeting status: 0=target reached
                                  #  gopigo_status[1]= Timeout status: 0=timeout reached
 gopigo_speed = [0,0]
 gopigo_edges_per_rev = 18        #  
 gopigo_enc_tgt = [0,0,2 * gopigo_edges_per_rev]   
 gopigo_servo_angle = 90                                  
 gopigo_com_timeout = 10000       
+gopigo_default_speed = 200
+gopigo_default_turn_speed = 25
 
 # ### Motor control functions:
 
@@ -164,8 +167,11 @@ def disable_encoders():    # Disable the encoders
 # ### Ultrasonic ranger read:
 
 def us_dist(pin):    # Read distance from the ultrasonic sensor
-    print "us_dist(pin=%d) called" % pin
-    return random.uniform(0,50)
+    if (debugLevel): print "goRWpigo:us_dist(pin=%d) called" % pin
+
+    dist=random.uniform(0,200)
+    if (debugLevel): print "goRWpigo:us_dist: returning %f" % dist
+    return dist
 	
 
 
@@ -249,6 +255,96 @@ def print_state():
 # ############ TEST MAIN ######################
 	
 def main():
+    servo_range = [2,3,4,5,6,7,8]
+
+    def key_input(event):
+        key_press = event  # ALAN  for Tkinter was = event.keysym.lower()
+        print(key_press)
+
+        if key_press == '?':
+            print """
+            w: fwd
+            s: bwd
+            a: left
+            d: right
+            q: rotate left
+            e: rotate right
+            space: stop
+            u: ultrasonic dist
+            2..8: servo position
+            +: increase speed
+            -: decrease speed
+            >: increase drive_bias "rt wheel"
+            <: decrease drive_bias             
+            =: print all variables
+            v: do set_speed(125), set_left(0), set_right(0)
+            
+            ctrl-c: quit
+        
+            """
+        if key_press == 'w':
+            fwd()
+        elif key_press == 's':
+            bwd()
+        elif key_press == 'a':
+            left()
+        elif key_press == 'd':
+            right()
+        elif key_press == 'q':
+            left_rot()
+        elif key_press == 'e':
+            right_rot()
+        elif key_press == ' ':     # was 'space'
+            stop()
+        elif key_press == '+':
+            increase_speed()
+        elif key_press == '-':
+            decrease_speed()
+        elif key_press == 'u':
+            print(us_dist(15))
+        elif key_press == '=':
+            print_state()
+        elif key_press == '>':
+            rwp.drive_bias += 1
+        elif key_press == '<':
+            rwp.drive_bias -= 1
+        elif key_press.isdigit():
+            if int(key_press) in servo_range:
+                enable_servo()
+                servo(int(key_press)*14)
+                time.sleep(1)
+                disable_servo()
+        elif key_press == 'v':
+            set_speed(125)
+            time.sleep(3)
+            set_left_speed(0)
+            time.sleep(3)
+            set_right_speed(0)
+            
+
+    # command = tk.Tk()
+    # command.bind_all('<Key>', key_input)  # ALAN  '' changed to '<Key>'
+    # command.mainloop()
+
+    ### created for command line execution cntl-C to quit
+    print "--- goRWpigo TEST MAIN STARTED"
+
+    while True:
+      event=raw_input("cmd? ") 
+      key_input(event)
+
+
+
+
+
+
+
+
+
+
+
+
+'''
     testspeed = 100  # speed for teseting  0-255 default 200
     angle = 45   # 45 deg left for servo test
     print "--- goRWpigo TEST MAIN STARTED"
@@ -335,8 +431,7 @@ def main():
  # ### Alan's funcs:
 
     print_state() 
-    
-    print "--- goRWpigo TEST MAIN Completed"
+'''    
 	   
 	   
 	   
