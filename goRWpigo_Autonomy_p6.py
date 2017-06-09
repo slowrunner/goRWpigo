@@ -14,17 +14,18 @@ import random
 min_distance = 70
 
 def autonomy():
+    print '\nAutonomy:  --- STARTING AUTONOMY p6 ---'
     no_problem = True
     while no_problem:
         servo(70)
         time.sleep(1)
         dist = us_dist(15)
         if dist > min_distance:
-            print('Forward is fine with me', dist)
+            print '\nAutonomy: Forward is fine with me', dist
             fwd()
             time.sleep(1)
         else:
-            print('Stuff is in the way', dist)
+            print '\nAutonomy: Stuff is in the way', dist
             stop()
             servo(28)
             time.sleep(1)
@@ -35,15 +36,15 @@ def autonomy():
             time.sleep(1)
 
             if left_dir > right_dir and left_dir > min_distance:
-                print('Choose left!')
+                print '\nAutonomy: Choose left!'
                 left()
                 time.sleep(1)
             elif left_dir < right_dir and right_dir > min_distance:
-                print('Choose Right!')
+                print '\nAutonomy: Choose Right!'
                 right()
                 time.sleep(1)
             else:
-                print('No good option, REVERSE!')
+                print '\nAutonomy: No good option, REVERSE!'
                 bwd()
                 time.sleep(2)
                 rot_choices = [right_rot, left_rot]
@@ -52,6 +53,7 @@ def autonomy():
                 time.sleep(1)
 
             stop()
+            print '\nAutonomy: Take a break'
                 
 stop()
 enable_servo()
