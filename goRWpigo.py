@@ -96,7 +96,7 @@ class gopigo_motor_modes(Enum):
     right_rot = 7
     
 gopigo_motor_mode = gopigo_motor_modes.init
-gopigo_status = '\x00\x00'       #  gopigo_status[0]= Encoder targeting status: 0=target reached
+gopigo_status = [0,0]       #  gopigo_status[0]= Encoder targeting status: 0=target reached
                                  #  gopigo_status[1]= Timeout status: 0=timeout reached
 gopigo_speed = 0                 #  0-255
 gopigo_enc_1_rev = 18            #  
