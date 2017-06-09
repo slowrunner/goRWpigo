@@ -8,6 +8,8 @@ import random   # to simulate until implemented
 from mylibs import myPyLib
 from enum import Enum
 
+debugLevel = 1                  # 0=off 1=some  99=all
+
 
 # GoPiGo API
 
@@ -27,6 +29,9 @@ from enum import Enum
 
 
 # ### Motor speed Functions:  (default speed is 200)
+#  Alan: gopigo speeds 1-255 mapped to MinPwr2Mov..MaxPwr
+#  Alan: default speed of 200 is roughly 78% max speed
+#  Alan: default_turn_speed of 25 is roughly 9% max speed
 
 # increase_speed(): Increase the speed of the GoPiGo by 10
 # decrease_speed(): Decrease the speed of the GoPiGo by 10
@@ -98,9 +103,8 @@ gopigo_enc_1_rev = 18            #
 gopigo_enc_tgt = [0,0,2 * gopigo_enc_1_rev]   
 gopigo_servo_angle = 90                                  
 gopigo_com_timeout = 10000       
-debugLevel = 1                  # 0=off 1=some  99=all
 gopigo_default_speed = 200
-gopigo_default_turn_speed = 110
+gopigo_default_turn_speed = 25
 
 # ### Motor control functions:
 
@@ -229,6 +233,7 @@ def disable_encoders():    # Disable the encoders
 
 def us_dist(pin):    # Read distance from the ultrasonic sensor
     if (debugLevel): print "goRWpigo:us_dist(pin=%d) called" % pin
+    rwp.us_dist()
     return random.uniform(0,50)
 	
 

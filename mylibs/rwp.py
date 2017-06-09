@@ -10,9 +10,10 @@ import myPDALib
 import myPyLib
 import time      # for test main
 
+debugLevel = 99		# 0 off, 1 some, 99 all    
 
 
-# GoPiGo API SUMMARY
+# RWP for GoPiGo API SUMMARY
 
 # ### Motor control functions:
 
@@ -30,7 +31,8 @@ import time      # for test main
 
 
 # ### Motor speed Functions:  (default speed is 200)
-
+# Note: gopigo speeds 1-255 are mapped to MinPwr2Mov (~100)..MaxPwr (255) 
+#       rwp_speeds[lft,rt] are from -255 to +255
 # increase_speed(): Increase the speed of the GoPiGo by 10
 # decrease_speed(): Decrease the speed of the GoPiGo by 10
 # set_left_speed(speed): Set speed of the left motor 0-255
@@ -76,21 +78,20 @@ import time      # for test main
 
 # ********* ADDED BY ALAN **************
 # print_state()   # prints out all state variables
-# motors_init()   # if not done prior, configures motor pins
+# motors_init()   # runs when import rwp.py to configure motor pins
 # motors_kill()   # set both motors to coast to stop
 
 
 
 # ################### IMPLEMENTATION #######
 rwp_speeds = [0,0]            # [left, right]
-rwp_edges_1_rev = 32        #  
+rwp_edges_1_rev = 32          #  
 rwp_enc_tgt = [0,0,0]   
 rwp_servo_angle = 0                                  
 rwp_com_timeout = 10000  
-rwp_default_speed = 200
-rwp_default_turn_speed = 110
+rwp_default_speed = 200       # this is equiv to 78% of max speed
+rwp_default_turn_speed = 25   # this is equiv to 10% of max speed
 
-debugLevel = 99		# 0 off, 1 some, 99 all    
  
 
 # ### Motor control functions:
@@ -253,9 +254,12 @@ def disable_encoders():    # Disable the encoders
 
 # ### Ultrasonic ranger read:
 
-def us_dist(pin):    # Read distance from the ultrasonic sensor
-    if (debugLevel): print "rwp:  us_dist(pin=%d) called" % pin
-    return random.uniform(0,50)
+def us_dist(pin=0):    # Read distance from the ultrasonic sensor
+                       # pin parameter not used
+    if (debugLevel): print "rwp:  us_dist() called" 
+    dist_in_cm = 10.1234567
+    if (debugLevel): print "rwp:us_dist: returning %f" % dist_in_cm
+    return dist_in_cm
 	
 
 
@@ -345,7 +349,7 @@ M2DirB = 15 # DIO 15 (A7)	Motor 2 Dir B (0=coast 1=R/Brake)
 MotorDirA = [14,12]  # 0 left 1 right
 MotorDirB = [15,13]  # 0 left 1 right
 
-MinPwr2Move = 100   # empirical minimum power to move with both wheels
+MinPwr2Mov = 100   # empirical minimum power to move with both wheels
 MaxPwr = 255
 drive_bias = -5   # positive will drive right more than left
 
@@ -394,14 +398,18 @@ def motor(index,vel):  #mtr 0=lft, 1=rt, +/-255
     if (vel > 0):  # set forward
         myPDALib.digitalWrite(MotorDirA[index],1)  #set to fwd
         myPDALib.digitalWrite(MotorDirB[index],0)  #set to off/coast
-        avel = vel
+        # avel = vel
     else:
         avel = -vel        
         myPDALib.digitalWrite(MotorDirA[index],0)  #set to off/coast
         myPDALib.digitalWrite(MotorDirB[index],1)  #set to bwd
   
     # compute pct to pwr
-    pwr = int( (MaxPwr - MinPwr2Move) * avel/100.0 + MinPwr2Move)    
+    pwr = int( (MaxPwr - MinPwr2Mov) * avel/255.0 + MinPwr2Mov)
+    if (debugLevel): 
+        print "rwp:motor(%d,%d) called" % (index,vel)
+        print "rwp:motor: MaxPwr=%d  MinPwr2Mov=%d" % (MaxPwr,MinPwr2Mov)
+        print "rwp:motor: pwr=%d or %d %% max speed" % (pwr, int(vel/255.0*100))
     myPDALib.analogWrite(MotorPin[index], pwr)  #set motor pwr level
 
 # ### DRIVE(TRANS_VEL, ROT_VEL)
@@ -428,13 +436,89 @@ def driveb(trans, rot):    # Correct for motor bias
     
     
 
-# ############ TEST MAIN ######################
+# ############ RWP TEST MAIN ######################
 	
 def main():
-    print "--- rwp TEST MAIN STARTED"
+    print "rwp:main: *** RWP TEST MAIN ***"
+    
+    servo_range = [2,3,4,5,6,7,8]
 
-    print "--- rwp TEST MAIN Completed"
-	   
+    def key_input(event):
+        key_press = event  # ALAN  for Tkinter was = event.keysym.lower()
+        print(key_press)
+
+        if key_press == '?':
+            print """
+            w: fwd
+            s: bwd
+            a: left
+            d: right
+            q: rotate left
+            e: rotate right
+            space: stop
+            u: ultrasonic dist
+            2..8: servo position
+            +: increase speed
+            -: decrease speed
+            >: increase drive_bias "rt wheel"
+            <: decrease drive_bias             
+            =: print all variables
+            v: do set_speed(125), set_left(0), set_right(0)
+            
+            ctrl-c: quit
+        
+            """
+        if key_press == 'w':
+            fwd()
+        elif key_press == 's':
+            bwd()
+        elif key_press == 'a':
+            left()
+        elif key_press == 'd':
+            right()
+        elif key_press == 'q':
+            left_rot()
+        elif key_press == 'e':
+            right_rot()
+        elif key_press == ' ':     # was 'space'
+            stop()
+        elif key_press == '+':
+            increase_speed()
+        elif key_press == '-':
+            decrease_speed()
+        elif key_press == 'u':
+            print(us_dist(15))
+        elif key_press == '=':
+            print_state()
+        elif key_press == '>':
+            rwp.drive_bias += 1
+        elif key_press == '<':
+            rwp.drive_bias -= 1
+        elif key_press.isdigit():
+            if int(key_press) in servo_range:
+                enable_servo()
+                servo(int(key_press)*14)
+                time.sleep(1)
+                disable_servo()
+        elif key_press == 'v':
+            set_speed(125)
+            time.sleep(3)
+            set_left_speed(0)
+            time.sleep(3)
+            set_right_speed(0)
+            
+
+    # command = tk.Tk()
+    # command.bind_all('<Key>', key_input)  # ALAN  '' changed to '<Key>'
+    # command.mainloop()
+
+    ### created for command line execution cntl-C to quit
+
+    while True:
+      event=raw_input("cmd? ") 
+      key_input(event)
+
+
 	   
 	   
 
