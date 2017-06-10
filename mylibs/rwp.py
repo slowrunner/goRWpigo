@@ -446,6 +446,7 @@ def driveb(trans, rot):    # Correct for motor bias
 TrigPin = 26    #GPIO26 is pin 37 of the PiB+ and Pi3B 40pin connector
 EchoPin = 5	 #PDALib "pin" = Servo3 connector (of 1-8) (GPIO18)
 
+usSensorInit = init_usSensor()
 
 
 def _echo1(gpio, level, tick):
@@ -509,8 +510,6 @@ offsetInchesToPivot=2.0
 #
 def init_usSensor():
   setEcho()
-
-usSensorInit = init_usSensor()
 
 # inCm()
 #
