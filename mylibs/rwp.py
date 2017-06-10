@@ -9,6 +9,7 @@
 import myPDALib
 import myPyLib
 import time      # for test main
+import pigpio	#for constants only, funcs through myPDALib
 
 debugLevel = 99		# 0 off, 1 some, 99 all    
 
@@ -90,7 +91,7 @@ rwp_enc_tgt = [0,0,0]
 rwp_servo_angle = 0                                  
 rwp_com_timeout = 10000  
 rwp_default_speed = 200       # this is equiv to 78% of max speed
-rwp_default_turn_speed = 25   # this is equiv to 10% of max speed
+rwp_default_turn_speed = 110   # this is equiv to 10% of max speed
 
  
 
@@ -433,6 +434,110 @@ def driveb(trans, rot):    # Correct for motor bias
 # Left Encoder - DIO B4 - "myPDALib.pin 20"
 # Right Encoder- DIO B3 - "myPDALib.pin 19" 
 
+# ################ usDistance.py ##############################
+#
+# usDistance.py    HC-SR04 ULTRASONIC DISTANCE SENSOR 
+#
+# import time
+# import pigpio
+# import PDALib
+
+# My configuration
+TrigPin = 26    #GPIO26 is pin 37 of the PiB+ and Pi3B 40pin connector
+EchoPin = 5	 #PDALib "pin" = Servo3 connector (of 1-8) (GPIO18)
+
+usSensorInit = init_usSensor()
+
+
+def _echo1(gpio, level, tick):
+   global _high
+   _high = tick
+      
+def _echo0(gpio, level, tick):
+   global _done, _high, _time
+   _time = tick - _high
+   _done = True
+
+
+def clearEcho():
+       global my_echo0, my_echo1
+       my_echo1.cancel()
+       my_echo0.cancel()
+
+def setEcho(srvopin=EchoPin):
+  global my_echo0, my_echo1
+  # my_echo1 = pi.callback(22, pigpio.RISING_EDGE,  _echo1)
+  # my_echo0 = pi.callback(22, pigpio.FALLING_EDGE, _echo0)
+
+  # Alan - 14Jun2016 Echo on servopin - translate to GPIO pin
+  my_echo1 = myPDALib.pi.callback(myPDALib.servopin[srvopin], pigpio.RISING_EDGE,  _echo1)
+  my_echo0 = myPDALib.pi.callback(myPDALib.servopin[srvopin], pigpio.FALLING_EDGE, _echo0)
+
+
+# readDistance2gs(_trig, _echo) for HC-SR04 only
+# Alan:   g: trigger is connected direct to a PiB+, Pi2, Pi3B gpio pin
+#         s: echo is connected to a PiDroidAlpha servo pin 0..7
+#
+# Alan: _trig is gpioPin  (e.g. 26 for GPIO26 on pin 37)
+#       _echo is a servoPin 0..7
+#
+
+def readDistance2gs(_trig, _echo):
+   global pi, _done, _time
+   _done = False
+   myPDALib.pi.set_mode(_trig, pigpio.OUTPUT)
+   myPDALib.pi.gpio_trigger(_trig,50,1)
+   myPDALib.pi.set_mode(myPDALib.servopin[_echo], pigpio.INPUT)
+   time.sleep(0.0001)
+   tim = 0
+   while not _done:
+      time.sleep(0.001)
+      tim = tim+1
+      if tim > 50:
+         return 0
+   return _time / 58.068 # return as cm
+
+# #############################################
+# ULTRASONIC DISTANCE SENSOR INTERFACE METHODS
+
+# OFFSET TO PIVOT - distance from front of sensor to pan servo pivot point
+offsetInchesToPivot=2.0
+
+
+# INIT_USSENSOR()
+#
+# Setup callbacks for trigger pulse and for echo pulse
+#
+def init_usSensor():
+  setEcho()
+
+# inCm()
+#
+# return Distance in Centimeters (to sensor circuit board)
+
+def inCm():
+   distInCm = readDistance2gs(TrigPin,EchoPin)
+   return distInCm
+
+# inInches()
+#
+# return Distance in Inches (to sensor circuit board)
+
+def inInches(readings=75):
+    if (readings > 1):
+      values = []
+      for i in range(0,readings):
+        values.append(readDistance2gs(TrigPin,EchoPin) * 0.393701)
+        # time.sleep(0.01)
+      values.sort()
+      usReading = sum(values) / float(len(values)) # average
+    else:
+      #  Distance from a single reading
+      usReading =  readDistance2gs(TrigPin,EchoPin) * 0.393701
+    return usReading 
+
+
+# ###########################################################
     
     
 
@@ -487,7 +592,7 @@ def main():
         elif key_press == '-':
             decrease_speed()
         elif key_press == 'u':
-            print(us_dist(15))
+            print inCm()," cm"
         elif key_press == '=':
             print_state()
         elif key_press == '>':
