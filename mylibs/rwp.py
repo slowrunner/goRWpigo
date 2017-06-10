@@ -553,17 +553,18 @@ def inInches(readings=75):
 
 #* Temperature Range: -30 to +60 Degree C
 #* Dead Band Width: 7usec
-#Operating Voltage:3.0-7.2 Volts
+#* Operating Voltage:3.0-7.2 Volts
 
 #Features :
 #- Coreless Motor
 #- All Nylon Gear
 #- Connector Wire Length 150MM
 
-#import PDALib
-#import myPDALib
-#import myPyLib
-#import time
+import myPDALib
+import myPyLib
+import time
+
+debugLevel = 1
 
 TILTSERVO = 0
 PANSERVO = 1
@@ -572,9 +573,14 @@ PanPosLimitL = 2500
 PanPosCenter = 1500
 PanPosLimitR =  630
 
-PanDegLimitL = -90
+PanDegLimitL = 0
 PanDegCenter = 90
-PanDegLimitR = +90
+PanDegLimitR = 170
+
+# pre calculate one deg angle equals how many "pos" increments
+PanDeg2PanPosInc = int((PanPosCenter-PanPosLimitL) / float(PanDegCenter-PanDegLimitL))
+Pan0Deg2PanPos = PanDeg2PanPosInc * -90 + PanPosCenter
+
 
 TiltPosLimitUp = 700  #550
 TiltPosCenter = 1375
@@ -584,32 +590,88 @@ TiltDegLimitUp = 90
 TiltDegCenter  = 0
 TiltDegLimitDn = -30
 
+# pre calculate one deg angle equals how many "pos" increments
+TiltDeg2TiltPosInc = int((TiltPosLimitUp-TiltPosCenter) / float(TiltDegLimitUp - TiltDegCenter))
+Tilt0Deg2TiltPos = TiltPosCenter
+
 
 def center_servos():
-  myPDALib.servoWrite(TILTSERVO, TiltPosCenter)
-  myPDALib.servoWrite(PANSERVO, PanPosCenter)
+    myPDALib.servoWrite(TILTSERVO, TiltPosCenter)
+    myPDALib.servoWrite(PANSERVO, PanPosCenter)
+    if (debugLevel): print "center_servos() called"
 
 def servos_off():
-  myPDALib.pinMode(TILTSERVO,myPDALib.INPUT)    # init Tilt servo off
-  myPDALib.pinMode(PANSERVO,myPDALib.INPUT)     # init motor2 servo off
+    myPDALib.pinMode(TILTSERVO,myPDALib.INPUT)    # init Tilt servo off
+    myPDALib.pinMode(PANSERVO,myPDALib.INPUT)     # init motor2 servo off
+    if (debugLevel): print "servos_off() called"
+  
+def servos_on():
+    myPDALib.pinMode(TILTSERVO, myPDALib.SERVO)    # init Tilt servo pin to SERVO mode
+    myPDALib.pinMode(PANSERVO, myPDALib.SERVO )    # init Pan  servo pin to SERVO mode
+    if (debugLevel): print "servos_on() called"
 
-def setup_servo_pins():
-  myPDALib.pinMode(TILTSERVO, myPDALib.SERVO)    # init Tilt servo pin to SERVO mode
-  myPDALib.pinMode(PANSERVO, myPDALib.SERVO )    # init Pan  servo pin to SERVO mode
-  center_servos()
-  servos_off()
+def init_servos():
+    if (debugLevel): print "init_servos() called"
+    servos_on()
+    center_servos()
+    servos_off()
 
-dummy = setup_servo_pins()                     # initialize when module is loaded
+dummy = init_servos()                     # initialize when module is loaded
 
-def pos_servo(servo,pos=1500):
+def pos_servo(servo,pos):
     if (debugLevel): print "rwp:pos_servo(Tilt0Pan1=%d, pos=%d)" % (servo,pos) 
     if (servo == PANSERVO):
         cpos = myPyLib.clamp(pos,PanPosLimitR,PanPosLimitL)
     elif (servo == TILTSERVO):
-        cpos = myPyLib.clamp(pos,TiltPosLimitDn,TiltPosLimitUp)
+        cpos = myPyLib.clamp(pos,TiltPosLimitUp,TiltPosLimitDn)
     if (debugLevel): print "setting Tilt0Pan1=%d to pos: %d)" % (servo, cpos) 
     myPDALib.servoWrite(servo, cpos)   # set to new position
+    return cpos
 
+def gopigoDeg2panPos(angle):
+    pos = angle*PanDeg2PanPosInc + Pan0Deg2PanPos
+    if (debugLevel):
+        print "rwp:gopigoDeg2panPos(angle=%d) called" % angle
+        print "rwp:gopigoDeg2panPos: returning pos:",pos
+    return pos
+
+def rwpPos2gopigoPanDeg(pos):
+    angle = (pos-Pan0Deg2PanPos)/PanDeg2PanPosInc
+    if (debugLevel):
+        print "rwp:rwpPos2gopioPanDeg(pos=%d) called" % pos
+        print "rwp:rwpPos2gopioPanDeg: returning angle:",angle
+    return pos
+    
+def tiltDeg2TiltPos(angle):
+    pos = angle*TiltDeg2TiltPosInc + Tilt0Deg2TiltPos
+    if (debugLevel):
+        print "rwp:tiltDeg2TiltPos(angle=%d) called" % angle
+        print "rwp:tiltDeg2TiltPos: returning pos:",pos
+    return pos
+
+def rwpTiltPos2TiltDeg(pos):
+    angle = (pos-Tilt0Deg2TiltPos)/TiltDeg2TiltPosInc
+    if (debugLevel):
+        print "rwp:rwpTiltPos2TiltDeg(pos=%d) called" % pos
+        print "rwp:rwpTiltPos2TiltDeg: returning angle:",angle
+    return angle
+    
+def tilt_servo(angle):
+    if (debugLevel): print "rwp:  tilt_servo(angle=%d) called" % angle 
+    pos = tiltDeg2TiltPos(angle)
+    cpos = pos_servo(TILTSERVO, pos)
+    cangle = rwpTiltPos2TiltDeg(cpos)                 
+    if (debugLevel): print "rwp:tilt_servo: pos=%d cpos=%d cangle=%f" % (pos,cpos,cangle)
+    return cangle
+    
+
+def pan_servo(angle):
+    if (debugLevel): print "rwp:  pan_servo(angle=%d) called" % angle 
+    pos = gopigoDeg2panPos(angle)
+    cpos = pos_servo(PANSERVO, pos)
+    cangle = rwpPos2gopigoPanDeg(cpos)                 
+    if (debugLevel): print "rwp:pan_servo: pos=%d cpos=%d cangle=%f" % (pos,cpos,cangle)
+    return cangle
 
     
     
@@ -617,11 +679,14 @@ def pos_servo(servo,pos=1500):
 # ############ RWP TEST MAIN ######################
 	
 def main():
+    global tiltAngle
     print "rwp:main: *** RWP TEST MAIN ***"
     
     servo_range = [2,3,4,5,6,7,8]
+    tiltAngle = 0
 
     def key_input(event):
+        global tiltAngle
         key_press = event  # ALAN  for Tkinter was = event.keysym.lower()
         print(key_press)
 
@@ -635,14 +700,15 @@ def main():
             e: rotate right
             space: stop
             u: ultrasonic dist
-            2..8: servo position
+            2-8: servo position
             +: increase speed
             -: decrease speed
             >: increase drive_bias "rt wheel"
             <: decrease drive_bias             
             =: print all variables
             v: do set_speed(125), set_left(0), set_right(0)
-            
+            ^: tilt sensor platform up 10 deg
+            V: tilt sensor platform dn 10 deg            
             ctrl-c: quit
         
             """
@@ -684,6 +750,23 @@ def main():
             set_left_speed(0)
             time.sleep(3)
             set_right_speed(0)
+        elif key_press == '^':
+                tiltAngle += 10
+                cmdDeg = tiltAngle
+                print "cmd Tilt Angle: %d", cmdDeg
+                actualDeg = tilt_servo(cmdDeg)
+                print "Tilt servo set to %f deg" % actualDeg
+                time.sleep(1)
+                servos_off()
+        elif key_press == 'V':
+                tiltAngle -= 10
+                cmdDeg = tiltAngle
+                print "cmd Tilt Angle: %d", cmdDeg
+                actualDeg = tilt_servo(cmdDeg)
+                print "Tilt servo set to %f deg" % actualDeg
+                time.sleep(1)
+                servos_off()
+            
             
 
     # command = tk.Tk()

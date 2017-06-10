@@ -257,14 +257,18 @@ def led_off(led):    # Turn LED off
 
 def enable_servo():    # Enables the servo
     if (debugLevel): print "goRWpigo:enable_servo() called"
+    rwp.servos_on()
 	
 def disable_servo():    # Disables the servo
     if (debugLevel): print "goRWpigo:disable_servo() called"
+    rwp.servos_off()
 	
-def servo(angle):    # Set servo position
+def servo(angle):    # Set servo position 0-180  0=full left, 180=full right
     global gopigo_servo_angle
     if (debugLevel): print "goRWpigo:servo(%d) called" % angle
     gopigo_servo_angle = angle
+    gopigo_servo_angle = rwp.pan(angle)  #call returns the rwp limited angle
+    
 	
 
 
