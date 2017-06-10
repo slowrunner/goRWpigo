@@ -538,6 +538,79 @@ def inInches(readings=75):
 
 
 # ###########################################################
+# tiltpan.py   TILT PAN 
+#
+# SG90 Micro Servo
+
+#Specification :
+
+#* Weight : 9 g
+
+#* Size : 22 x 11.5 x 27 mm
+
+#* Operating Speed (4.8V no load): 0.12sec/60 degrees 
+#* Stall Torque (4.8V): 17.5oz/in (1.2 kg/cm)
+
+#* Temperature Range: -30 to +60 Degree C
+#* Dead Band Width: 7usec
+#Operating Voltage:3.0-7.2 Volts
+
+#Features :
+#- Coreless Motor
+#- All Nylon Gear
+#- Connector Wire Length 150MM
+
+#import PDALib
+#import myPDALib
+#import myPyLib
+#import time
+
+TILTSERVO = 0
+PANSERVO = 1
+
+PanPosLimitL = 2500
+PanPosCenter = 1500
+PanPosLimitR =  630
+
+PanDegLimitL = -90
+PanDegCenter = 90
+PanDegLimitR = +90
+
+TiltPosLimitUp = 700  #550
+TiltPosCenter = 1375
+TiltPosLimitDn = 1900 #2435
+
+TiltDegLimitUp = 90
+TiltDegCenter  = 0
+TiltDegLimitDn = -30
+
+
+def center_servos():
+  myPDALib.servoWrite(TILTSERVO, TiltPosCenter)
+  myPDALib.servoWrite(PANSERVO, PanPosCenter)
+
+def servos_off():
+  myPDALib.pinMode(TILTSERVO,myPDALib.INPUT)    # init Tilt servo off
+  myPDALib.pinMode(PANSERVO,myPDALib.INPUT)     # init motor2 servo off
+
+def setup_servo_pins():
+  myPDALib.pinMode(TILTSERVO, myPDALib.SERVO)    # init Tilt servo pin to SERVO mode
+  myPDALib.pinMode(PANSERVO, myPDALib.SERVO )    # init Pan  servo pin to SERVO mode
+  center_servos()
+  servos_off()
+
+dummy = setup_servo_pins()                     # initialize when module is loaded
+
+def pos_servo(servo,pos=1500):
+    if (debugLevel): print "rwp:pos_servo(Tilt0Pan1=%d, pos=%d)" % (servo,pos) 
+    if (servo == PANSERVO):
+        cpos = myPyLib.clamp(pos,PanPosLimitR,PanPosLimitL)
+    elif (servo == TILTSERVO):
+        cpos = myPyLib.clamp(pos,TiltPosLimitDn,TiltPosLimitUp)
+    if (debugLevel): print "setting Tilt0Pan1=%d to pos: %d)" % (servo, cpos) 
+    myPDALib.servoWrite(servo, cpos)   # set to new position
+
+
     
     
 
