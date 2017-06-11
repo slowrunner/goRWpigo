@@ -455,8 +455,8 @@ def _echo1(gpio, level, tick):
    _high = tick
       
 def _echo0(gpio, level, tick):
-   global _done, _high, _time
-   _time = tick - _high
+   global _done, _high, _pulseTravelTime
+   _pulseTravelTime = tick - _high
    _done = True
 
 
@@ -479,16 +479,17 @@ def setEcho(srvopin=EchoPin):
 # Alan:   g: trigger is connected direct to a PiB+, Pi2, Pi3B gpio pin
 #         s: echo is connected to a PiDroidAlpha servo pin 0..7
 #
-# Alan: _trig is gpioPin  (e.g. 26 for GPIO26 on pin 37)
-#       _echo is a servoPin 0..7
+# Alan: _trigpin is gpioPin  (e.g. 26 for GPIO26 on pin 37)
+#       _echopin is a servoPin 0..7
 #
 
-def readDistance2gs(_trig, _echo):
-   global pi, _done, _time
+def readDistance2gs(_trigpin, _echopin):
+   global _done, _pulseTravelTime
    _done = False
-   myPDALib.pi.set_mode(_trig, pigpio.OUTPUT)
-   myPDALib.pi.gpio_trigger(_trig,50,1)
-   myPDALib.pi.set_mode(myPDALib.servopin[_echo], pigpio.INPUT)
+   myPDALib.pi.set_mode(_trigpin, pigpio.OUTPUT)
+   time.sleep(0.0001)
+   myPDALib.pi.gpio_trigger(_trigpin,50,1)
+   myPDALib.pi.set_mode(myPDALib.servopin[_echopin], pigpio.INPUT)
    time.sleep(0.0001)
    tim = 0
    while not _done:
@@ -496,7 +497,7 @@ def readDistance2gs(_trig, _echo):
       tim = tim+1
       if tim > 50:
          return 0
-   return _time / 58.068 # return as cm
+   return _pulseTravelTime / 58.068 # return as cm
 
 # #############################################
 # ULTRASONIC DISTANCE SENSOR INTERFACE METHODS
