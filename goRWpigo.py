@@ -267,7 +267,7 @@ def servo(angle):    # Set servo position 0-180  0=full left, 180=full right
     global gopigo_servo_angle
     if (debugLevel): print "goRWpigo:servo(%d) called" % angle
     gopigo_servo_angle = angle
-    gopigo_servo_angle = rwp.pan(angle)  #call returns the rwp limited angle
+    gopigo_servo_angle = rwp.pan_servo(angle)  #call returns the rwp limited angle
     
 	
 
@@ -383,7 +383,8 @@ def main():
         elif key_press.isdigit():
             if int(key_press) in servo_range:
                 enable_servo()
-                servo(int(key_press)*14)
+                cmdDeg = (int(key_press)-5)*30+90 
+                servo(cmdDeg)   # Alan 2=0 5=90 8=180
                 time.sleep(1)
                 disable_servo()
         elif key_press == 'v':

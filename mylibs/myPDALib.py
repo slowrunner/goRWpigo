@@ -7,7 +7,7 @@
 import myPyLib
 import pigpio
 
-sim = True
+sim = False
 
 ##### SUPPLEMENTAL Pi Droid Alpha FUNCTIONS
 # MORE CONSTANTS FOR MCP23S17 PDALib.setDioBit, clearDioBit
@@ -156,7 +156,7 @@ def readVoltage(adcPin):
 
 import time
 import spidev
-import pigpio
+#import pigpio
 import threading     # ALAN  for threading.Lock() critical sectioning
 
 # pin 0-7  = Pi GPIO's

@@ -281,14 +281,16 @@ def led_off(led):    # Turn LED off
 
 def enable_servo():    # Enables the servo
     if (debugLevel): print "rwp:  enable_servo() called"
+    servos_on()
 	
 def disable_servo():    # Disables the servo
     if (debugLevel): print "rwp:  disable_servo() called"
+    servos_off()
 	
 def servo(angle):    # Set servo position
     global gopiogo_servo_angle
     if (debugLevel): print "rwp:  servo(%d) called" % angle
-    gopigo_servo_angle = angle
+    gopigo_servo_angle = pan_servo(angle)
 	
 
 
@@ -446,7 +448,6 @@ def driveb(trans, rot):    # Correct for motor bias
 TrigPin = 26    #GPIO26 is pin 37 of the PiB+ and Pi3B 40pin connector
 EchoPin = 5	 #PDALib "pin" = Servo3 connector (of 1-8) (GPIO18)
 
-usSensorInit = init_usSensor()
 
 
 def _echo1(gpio, level, tick):
@@ -511,6 +512,8 @@ offsetInchesToPivot=2.0
 def init_usSensor():
   setEcho()
 
+dummy = init_usSensor()
+
 # inCm()
 #
 # return Distance in Centimeters (to sensor circuit board)
@@ -569,13 +572,13 @@ debugLevel = 1
 TILTSERVO = 0
 PANSERVO = 1
 
-PanPosLimitL = 2500
-PanPosCenter = 1500
-PanPosLimitR =  630
+PanPosLimitL = 2450
+PanPosCenter = 1450
+PanPosLimitR =  575
 
-PanDegLimitL = 0
-PanDegCenter = 90
-PanDegLimitR = 170
+PanDegLimitL =   0
+PanDegCenter =  90
+PanDegLimitR = 180
 
 # pre calculate one deg angle equals how many "pos" increments
 PanDeg2PanPosInc = int((PanPosCenter-PanPosLimitL) / float(PanDegCenter-PanDegLimitL))
@@ -640,7 +643,7 @@ def rwpPos2gopigoPanDeg(pos):
     if (debugLevel):
         print "rwp:rwpPos2gopioPanDeg(pos=%d) called" % pos
         print "rwp:rwpPos2gopioPanDeg: returning angle:",angle
-    return pos
+    return angle
     
 def tiltDeg2TiltPos(angle):
     pos = angle*TiltDeg2TiltPosInc + Tilt0Deg2TiltPos
