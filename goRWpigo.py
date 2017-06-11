@@ -233,8 +233,7 @@ def disable_encoders():    # Disable the encoders
 
 def us_dist(pin):    # Read distance from the ultrasonic sensor
     if (debugLevel): print "goRWpigo:us_dist(pin=%d) called" % pin
-    rwp.us_dist()
-    dist=random.uniform(0,200)
+    dist=rwp.us_dist()
     if (debugLevel): print "goRWpigo:us_dist: returning %f" % dist
     return dist
 	
