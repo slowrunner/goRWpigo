@@ -55,7 +55,7 @@ def us_map():
 	ang=0
 	lim=250		#maximum limit of distance measurement (any value over this which be initialized to the limit value)
 	index=0
-	sample=3	#Number of samples for each angle (more the samples, better the data but more the time taken)
+	sample=30	#Number of samples for each angle (more the samples, better the data but more the time taken)
 	print "Getting the data"
 
 	while True:
@@ -137,6 +137,7 @@ while True:
 	enc_tgt(1,1,18)	#Set encoder targetting. Stop after 4 rotations of both the wheels
 	fwd()
 	time.sleep(.2)
+        stop()
 	while True:
 		enc=read_enc_status()
 		ts=read_timeout_status()
