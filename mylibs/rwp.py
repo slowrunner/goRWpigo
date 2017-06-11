@@ -285,7 +285,7 @@ def enable_servo():    # Enables the servo
 	
 def disable_servo():    # Disables the servo
     if (debugLevel): print "rwp:  disable_servo() called"
-    servos_off()
+    # servos_off()
 	
 def servo(angle):    # Set servo position
     global gopiogo_servo_angle
@@ -573,21 +573,21 @@ debugLevel = 1
 TILTSERVO = 0
 PANSERVO = 1
 
-PanPosLimitL = 2450
+PanPosLimitL = 2400
 PanPosCenter = 1450
-PanPosLimitR =  575
+PanPosLimitR =  600
 
 PanDegLimitL =   0
 PanDegCenter =  90
 PanDegLimitR = 180
 
 # pre calculate one deg angle equals how many "pos" increments
-PanDeg2PanPosInc = int((PanPosCenter-PanPosLimitL) / float(PanDegCenter-PanDegLimitL))
-Pan0Deg2PanPos = PanDeg2PanPosInc * -90 + PanPosCenter
+PanDeg2PanPosInc = int((PanPosLimitR-PanPosLimitL) / float(PanDegLimitR-PanDegLimitL))
+Pan0Deg2PanPos = PanDeg2PanPosInc * -180 + PanPosLimitR
 
 
-TiltPosLimitUp = 700  #550
-TiltPosCenter = 1375
+TiltPosLimitUp = 500
+TiltPosCenter = 1400
 TiltPosLimitDn = 1900 #2435
 
 TiltDegLimitUp = 90
@@ -600,6 +600,7 @@ Tilt0Deg2TiltPos = TiltPosCenter
 
 
 def center_servos():
+    servos_on()
     myPDALib.servoWrite(TILTSERVO, TiltPosCenter)
     myPDALib.servoWrite(PANSERVO, PanPosCenter)
     if (debugLevel): print "center_servos() called"
@@ -617,8 +618,9 @@ def servos_on():
 def init_servos():
     if (debugLevel): print "init_servos() called"
     servos_on()
+    time.sleep(0.1)
     center_servos()
-    servos_off()
+    # servos_off()
 
 dummy = init_servos()                     # initialize when module is loaded
 
@@ -640,7 +642,7 @@ def gopigoDeg2panPos(angle):
     return pos
 
 def rwpPos2gopigoPanDeg(pos):
-    angle = (pos-Pan0Deg2PanPos)/PanDeg2PanPosInc
+    angle = (pos - Pan0Deg2PanPos)/PanDeg2PanPosInc
     if (debugLevel):
         print "rwp:rwpPos2gopioPanDeg(pos=%d) called" % pos
         print "rwp:rwpPos2gopioPanDeg: returning angle:",angle
@@ -713,6 +715,7 @@ def main():
             v: do set_speed(125), set_left(0), set_right(0)
             ^: tilt sensor platform up 10 deg
             V: tilt sensor platform dn 10 deg            
+            c: center servos
             ctrl-c: quit
         
             """
@@ -745,7 +748,7 @@ def main():
         elif key_press.isdigit():
             if int(key_press) in servo_range:
                 enable_servo()
-                servo(int(key_press)*14)
+                servo((int(key_press)-2)*30)
                 time.sleep(1)
                 disable_servo()
         elif key_press == 'v':
@@ -755,6 +758,7 @@ def main():
             time.sleep(3)
             set_right_speed(0)
         elif key_press == '^':
+                enable_servo()
                 tiltAngle += 10
                 cmdDeg = tiltAngle
                 print "cmd Tilt Angle: %d", cmdDeg
@@ -763,6 +767,7 @@ def main():
                 time.sleep(1)
                 servos_off()
         elif key_press == 'V':
+                enable_servo()
                 tiltAngle -= 10
                 cmdDeg = tiltAngle
                 print "cmd Tilt Angle: %d", cmdDeg
@@ -770,6 +775,8 @@ def main():
                 print "Tilt servo set to %f deg" % actualDeg
                 time.sleep(1)
                 servos_off()
+        elif key_press == 'c':
+                center_servos()   # calls servos_on() 
             
             
 
