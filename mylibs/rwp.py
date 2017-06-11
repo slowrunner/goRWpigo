@@ -49,7 +49,7 @@ debugLevel = 99		# 0 off, 1 some, 99 all
 
 # ### Ultrasonic ranger read:
 
-# us_dist(pin): Read distance in cm from the ultrasonic sensor (pin=1 or 15)
+# us_dist(pin): Read distance in cm from the ultrasonic sensor (rwp ignores pin parm)
 
 
 # ### LED control:
@@ -258,7 +258,7 @@ def disable_encoders():    # Disable the encoders
 def us_dist(pin=0):    # Read distance from the ultrasonic sensor
                        # pin parameter not used
     if (debugLevel): print "rwp:  us_dist() called" 
-    dist_in_cm = 10.1234567
+    dist_in_cm = inCm()    # call the rwp ultrasonic range once - return dist in cm
     if (debugLevel): print "rwp:us_dist: returning %f" % dist_in_cm
     return dist_in_cm
 	
@@ -487,7 +487,7 @@ def readDistance2gs(_trigpin, _echopin):
    global _done, _pulseTravelTime
    _done = False
    myPDALib.pi.set_mode(_trigpin, pigpio.OUTPUT)
-   time.sleep(0.0001)
+   time.sleep(0.0001)        # does this make it more reliable?
    myPDALib.pi.gpio_trigger(_trigpin,50,1)
    myPDALib.pi.set_mode(myPDALib.servopin[_echopin], pigpio.INPUT)
    time.sleep(0.0001)
