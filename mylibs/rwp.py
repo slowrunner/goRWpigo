@@ -63,7 +63,7 @@ debugLevel = 99		# 0 off, 1 some, 99 all
 
 # enable_servo(): Enables the servo
 # disable_servo(): Disables the servo
-# servo(angle): Set servo position  0-180
+# servo(angle): Set servo position  Left 180 - 0 Right
 
 
 # ### Status from the GoPiGo:
@@ -577,13 +577,13 @@ PanPosLimitL = 2400
 PanPosCenter = 1450
 PanPosLimitR =  600
 
-PanDegLimitL =   0
+PanDegLimitL = 180
 PanDegCenter =  90
-PanDegLimitR = 180
+PanDegLimitR =   0
 
 # pre calculate one deg angle equals how many "pos" increments
-PanDeg2PanPosInc = int((PanPosLimitR-PanPosLimitL) / float(PanDegLimitR-PanDegLimitL))
-Pan0Deg2PanPos = PanDeg2PanPosInc * -180 + PanPosLimitR
+PanDeg2PanPosInc = int((PanPosLimitL-PanPosLimitR) / float(PanDegLimitL-PanDegLimitR))
+Pan0Deg2PanPos = PanDeg2PanPosInc * -180 + PanPosLimitL
 
 
 TiltPosLimitUp = 500
@@ -748,7 +748,7 @@ def main():
         elif key_press.isdigit():
             if int(key_press) in servo_range:
                 enable_servo()
-                servo((int(key_press)-2)*30)
+                servo((8-int(key_press))*30)
                 time.sleep(1)
                 disable_servo()
         elif key_press == 'v':

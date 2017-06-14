@@ -62,7 +62,7 @@ debugLevel = 1                  # 0=off 1=some  99=all
 
 # enable_servo(): Enables the servo
 # disable_servo(): Disables the servo
-# servo(angle): Set servo position  0-180
+# servo(angle): Set servo position  Left 180 - 0 Right
 
 
 # ### Status from the GoPiGo:
