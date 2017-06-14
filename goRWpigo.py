@@ -382,8 +382,8 @@ def main():
         elif key_press.isdigit():
             if int(key_press) in servo_range:
                 enable_servo()
-                cmdDeg = (int(key_press)-5)*30+90 
-                servo(cmdDeg)   # Alan 2=0 5=90 8=180
+                cmdDeg = (8-int(key_press))*30 
+                servo(cmdDeg)   # Alan lft 2=180 5=90 8=0 rt
                 time.sleep(1)
                 disable_servo()
         elif key_press == 'v':

@@ -105,10 +105,10 @@ def fwd(speed=rwp_default_speed):    # Move the GoPiGo forward with PID (better 
     
 
 def motor_fwd(speed=rwp_default_speed):    # Move the GoPiGo forward without PID
-    global rwp_speeds, drive_bias
+    global rwp_speeds, drive_bias_F
     if (debugLevel): print "rwp:  motor_fwd(%d) called" % speed
-    if (drive_bias > 0):  rwp_speeds = [speed - drive_bias, speed]  #decrease left by bias
-    else: rwp_speeds = [speed, speed - abs(drive_bias)]             #decrease right by bias
+    if (drive_bias_F > 0):  rwp_speeds = [speed - drive_bias_F, speed]  #decrease left by bias
+    else: rwp_speeds = [speed, speed - abs(drive_bias_F)]             #decrease right by bias
     if (debugLevel): print "rwp:motor_fwd: rwp_speeds=",rwp_speeds
     motor(LMotorIndex, rwp_speeds[0])
     motor(RMotorIndex, rwp_speeds[1])    
@@ -118,10 +118,10 @@ def bwd(speed=rwp_default_speed):    # Move the GoPiGo back with PID (better con
     motor_bwd(speed)                 # no PID for time being
 	
 def motor_bwd(speed=rwp_default_speed):    # Move the GoPiGo back without PID
-    global rwp_speeds, drive_bias
+    global rwp_speeds, drive_bias_B
     if (debugLevel): print "rwp:  motor_bwd() called"
-    if (drive_bias < 0):  rwp_speeds = [-speed, -speed - drive_bias]  #e.g. -200 - -5=-195 decreased 
-    else: rwp_speeds = [-speed + drive_bias, -speed]
+    if (drive_bias_B < 0):  rwp_speeds = [-speed, -speed - drive_bias_B]  #e.g. -200 - -5=-195 decreased 
+    else: rwp_speeds = [-speed + drive_bias_B, -speed]
     motor(LMotorIndex, rwp_speeds[0])
     motor(RMotorIndex, rwp_speeds[1])    
 	
@@ -354,7 +354,8 @@ MotorDirB = [15,13]  # 0 left 1 right
 
 MinPwr2Mov = 100   # empirical minimum power to move with both wheels
 MaxPwr = 255
-drive_bias = -5   # positive will drive right more than left
+drive_bias_F = 35   # positive will drive right more than left
+drive_bias_B =  0  
 
 # ### MOTORS_INIT()
 motorsInitialized = False   # True after motor pins are configured once
@@ -429,7 +430,7 @@ def drive(trans_vel, rot_vel): #  + = fwd, ccw
 def driveb(trans, rot):    # Correct for motor bias
     # 
     #
-    rot_bias = (drive_bias * trans) / 100
+    rot_bias = (drive_bias_F * trans) / 100
     motor(LMotorIndex, trans - (rot + rot_bias));
     motor(RMotorIndex,trans + (rot + rot_bias))
 
