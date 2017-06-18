@@ -97,12 +97,12 @@ def analogRead12bit(adcnum):
     with dio_lock:
       if adcnum < 0:
         return -1   
-    if adcnum > 7:
-      return -1   
-    spi.open(0,1) 
-    r = spi.xfer2(req12[adcnum])
-    spi.close()
-    adcout = ((r[1] & 0b1111) << 8) + r[2]
+      if adcnum > 7:
+        return -1   
+      spi.open(0,1) 
+      r = spi.xfer2(req12[adcnum])
+      spi.close()
+      adcout = ((r[1] & 0b1111) << 8) + r[2]
     return adcout
 
 
