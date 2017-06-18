@@ -10,6 +10,7 @@ import myPDALib
 import myPyLib
 import time      # for test main
 import pigpio	#for constants only, funcs through myPDALib
+import encoders
 
 debugLevel = 99		# 0 off, 1 some, 99 all    
 
@@ -46,7 +47,7 @@ debugLevel = 99		# 0 off, 1 some, 99 all
 # enc_tgt(m1, m2, numEncPulses): Set encoder target m1/2=0:disable 1:enabled, 18 per wheel rev
 # enable_encoders(): Enable the encoders
 # disable_encoders(): Disable the encoders
-
+# enc_read(motor):    motor=left 1, 0 right  returns distance traveled in cm
 # ### Ultrasonic ranger read:
 
 # us_dist(pin): Read distance in cm from the ultrasonic sensor (rwp ignores pin parm)
@@ -78,7 +79,7 @@ debugLevel = 99		# 0 off, 1 some, 99 all
 # read_timeout_status(): Read timeout status returns 0 if timeout reached, 1 if not
 
 # ********* ADDED BY ALAN **************
-# print_state()   # prints out all state variables
+# (rwp) print_status()   # prints out all state variables
 # motors_init()   # runs when import rwp.py to configure motor pins
 # motors_kill()   # set both motors to coast to stop
 
@@ -248,10 +249,18 @@ def enc_tgt(m1,m2,numEncPulses):    # Set encoder target to move the GoPiGo to a
 	
 def enable_encoders():    # Enable the encoders
     if (debugLevel): print "rwp:  enable_encoders() called"
+    encoders.enable_encoder_interrupts()
+
 	
 def disable_encoders():    # Disable the encoders
     if (debugLevel): print "rwp:  disable_encoders() called"
-	
+    encoders.disable_encoder_interrupts()
+
+def enc_read(motor):       # motor=left 1, 0 right  returns distance traveled in cm
+    if (debugLevel): print "rwp: enc_read(%d) left 1, 0 right" % motor 
+    if (motor): enc_count = encoders.rightCount()
+    else:       enc_count = encoders.leftCount()
+    return enc_count * encoders.CmPerCount 	
 
 # ### Ultrasonic ranger read:
 
@@ -680,7 +689,10 @@ def pan_servo(angle):
     if (debugLevel): print "rwp:pan_servo: pos=%d cpos=%d cangle=%f" % (pos,cpos,cangle)
     return cangle
 
-    
+
+def print_status():
+    if (debugLevel): print "rwp:  print_status() called"
+    print "rwp.print_status: encoders[left,right] = [%f,%f] cm" % (enc_read(1),enc_read(0))    
     
 
 # ############ RWP TEST MAIN ######################
@@ -717,6 +729,8 @@ def main():
             ^: tilt sensor platform up 10 deg
             V: tilt sensor platform dn 10 deg            
             c: center servos
+            i: enable and reset encoders
+            
             ctrl-c: quit
         
             """
@@ -741,7 +755,7 @@ def main():
         elif key_press == 'u':
             print inCm()," cm"
         elif key_press == '=':
-            print_state()
+            print_status()
         elif key_press == '>':
             rwp.drive_bias += 1
         elif key_press == '<':
@@ -778,7 +792,8 @@ def main():
                 servos_off()
         elif key_press == 'c':
                 center_servos()   # calls servos_on() 
-            
+        elif key_press == 'i':
+                enable_encoders()     
             
 
     # command = tk.Tk()

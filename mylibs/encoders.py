@@ -49,6 +49,7 @@ LeftEncDioBit = LeftEncPin - 8
 RightEncDioBit = RightEncPin - 8
 
 InchesPerCount = 0.239   # inches per encoder count
+CmPerCount = InchesPerCount * 2.54
 
 _leftEncState=0
 _rightEncState=0
