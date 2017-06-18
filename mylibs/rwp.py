@@ -12,7 +12,7 @@ import time      # for test main
 import pigpio	#for constants only, funcs through myPDALib
 import encoders
 
-debugLevel = 99		# 0 off, 1 some, 99 all    
+debugLevel = 0		# 0 off, 1 some, 99 all    
 
 
 # RWP for GoPiGo API SUMMARY
@@ -258,8 +258,9 @@ def disable_encoders():    # Disable the encoders
 
 def enc_read(motor):       # motor=left 1, 0 right  returns distance traveled in cm
     if (debugLevel): print "rwp: enc_read(%d) left 1, 0 right" % motor 
-    if (motor): enc_count = encoders.rightCount()
+    if (motor==0): enc_count = encoders.rightCount()
     else:       enc_count = encoders.leftCount()
+    if (debugLevel): print "rwp.enc_read: enc_count is %d" % enc_count
     return enc_count * encoders.CmPerCount 	
 
 # ### Ultrasonic ranger read:
@@ -577,8 +578,6 @@ def inInches(readings=75):
 import myPDALib
 import myPyLib
 import time
-
-debugLevel = 1
 
 TILTSERVO = 0
 PANSERVO = 1

@@ -258,10 +258,12 @@ def rightState():
 
 def leftCount():
   global _leftEncCount
+  if (debugLevel): print "encoders.leftCount: returning _leftEncCount=%d" % _leftEncCount
   return _leftEncCount
 
 def rightCount():
   global _rightEncCount
+  if (debugLevel): print "encoders.rightCount: returning _rightEncCount=%d" % _rightEncCount
   return _rightEncCount
 
 def bias():

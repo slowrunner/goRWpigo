@@ -45,6 +45,8 @@ debugLevel = 1                  # 0=off 1=some  99=all
 # enc_tgt(m1, m2, numEncPulses): Set encoder target m1/2=0:disable 1:enabled, 18 per wheel rev
 # enable_encoders(): Enable the encoders
 # disable_encoders(): Disable the encoders
+# enc_read(motor):    motor=left 1, 0 right  returns distance traveled in cm
+
 
 # ### Ultrasonic ranger read:
 
@@ -224,10 +226,15 @@ def enc_tgt(m1,m2,numEncPulses):    # Set encoder target to move the GoPiGo to a
 	
 def enable_encoders():    # Enable the encoders
     if (debugLevel): print "goRWpigo:enable_encoders() called"
+    rwp.enable_encoders()
 	
 def disable_encoders():    # Disable the encoders
     if (debugLevel): print "goRWpigo:disable_encoders() called"
-	
+    disable_encoders()
+
+def enc_read(motor):       # motor=left 1, 0 right  returns distance traveled in cm	
+    if (debugLevel): print "goRWpigo:enc_read(motor=%i) left 1,0 right" % motor
+    return rwp.enc_read(motor)
 
 # ### Ultrasonic ranger read:
 
@@ -316,12 +323,13 @@ def print_state():
         print "gopigo_motor_mode:", gopigo_motor_mode
         print "gopigo_speed:     ", gopigo_speed
         print "rwp_speeds:lft,rt ", repr(rwp.rwp_speeds)
-        print "rwp.drive_bias:   ", rwp.drive_bias
+        print "rwp.drive_bias_F:   ", rwp.drive_bias_F
+        print "rwp.drive_bias_B:   ", rwp.drive_bias_B
         print "gopigo_enc_1_rev: ", gopigo_enc_1_rev
         print "gopigo_enc_tgt:   ", gopigo_enc_tgt
         print "gopigo_com_timeout:", gopigo_com_timeout
         print "gopigo_servo_angle:", gopigo_servo_angle
-    
+        print "gopigo enc_read(): lft %f,rt %f cm" % (enc_read(1),enc_read(0))
 
 # ############ TEST MAIN ######################
 	
@@ -345,10 +353,11 @@ def main():
             2..8: servo position
             +: increase speed
             -: decrease speed
-            >: increase drive_bias "rt wheel"
-            <: decrease drive_bias             
+            >: increase drive_bias_F (rt wheel)
+            <: decrease drive_bias_F             
             =: print all variables
             v: do set_speed(125), set_left(0), set_right(0)
+            i: enable encoders
             
             ctrl-c: quit
         
@@ -376,9 +385,9 @@ def main():
         elif key_press == '=':
             print_state()
         elif key_press == '>':
-            rwp.drive_bias += 1
+            rwp.drive_bias_F += 1
         elif key_press == '<':
-            rwp.drive_bias -= 1
+            rwp.drive_bias_F -= 1
         elif key_press.isdigit():
             if int(key_press) in servo_range:
                 enable_servo()
@@ -392,7 +401,8 @@ def main():
             set_left_speed(0)
             time.sleep(3)
             set_right_speed(0)
-            
+        elif key_press == 'i':
+            enable_encoders()            
 
     # command = tk.Tk()
     # command.bind_all('<Key>', key_input)  # ALAN  '' changed to '<Key>'
