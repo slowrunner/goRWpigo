@@ -1,7 +1,28 @@
 #!/usr/bin/python
 #
 # encoders.py   ENCODERS BY INTERRUPT 
+# 
+# Each encoder count is 0.239 inches in either direction
 #
+# methods:
+#    enable_encoder_interrupts()  # sets up callback 
+#    disable_encoder_interrupts() # disable callback and interrupts
+#    cancel()                     # convenience func to disable encoder interrupts
+#    reset()                      # reset all encoder counts to 0 and resets interrupt state
+#    distanceTraveled()           # ditance since last reset() or setInitialCounts()
+#    readEncoders()               # manual read - interrupts should be disabled
+#    leftCount()                  # getter 
+#    rightCount()                 # getter 
+#    leftState()                  # getter 0/1
+#    rightState()                 # getter 0/1
+#    bias()                       # getter diff (right - left), positive is ccw_fwd, cw_bwd
+#    printStatus()                # state, count, bias
+
+# internal methods:   
+#    init()                       # initialize encoder and interrupt pin
+#    callback()                   # called when either encoder changes state
+#    interruptState()             # direct read of interrupt pin
+#    setInitialCounts()           # sets distance counters to current counters (no reset)
 
 import myPDALib
 import myPyLib
@@ -13,15 +34,16 @@ import threading
 
 debugLevel = 0
 
-# ################# Encoder TEST ###########
-
-# Left Encoder - DIO B4 - "PDALib.pin 20"
-# Right Encoder- DIO B3 - "PDALib.pin 19" 
+# ################# Encoder ###########
+#
+# Left Encoder - DIO B4 - "myPDALib.pin 20"
+# Right Encoder- DIO B3 - "myPDALib.pin 19" 
+# Encoder Int  - ServoPin5 of 1..8  myPDALib pin 4 GPIO22
+# 
 
 LeftEncPin = 20
 RightEncPin = 19
-
-InterruptPin = 4 # ServoPin5 1..8  PDALib pin 4 GPIO22
+InterruptPin = 4 
 
 LeftEncDioBit = LeftEncPin - 8
 RightEncDioBit = RightEncPin - 8
@@ -32,30 +54,38 @@ _leftEncState=0
 _rightEncState=0
 _leftEncCount=0
 _rightEncCount=0
-_bias=0              # going forward, is cw going backward
+_bias=0              # positive is ccw going forward, is cw going backward
 _lastLeftEncState=0
 _lastRightEncState=0
-
 _interruptState = 1  # Active-low
 INTERRUPT_ACTIVE = 0
 
-def init():
+initialLeftCount = 0  # place to store the counter value when starting motion
+initialRightCount = 0
+initialMeanCount = 0
+initialized = False
+
+def init():         # initial encoder pins and interrupt pin
+  if (debugLevel):  print "encoders.init: called"
   # Set up DIO channels as input
-  PDALib.pinMode(LeftEncPin,PDALib.INPUT)
-  PDALib.pinMode(RightEncPin,PDALib.INPUT)
+  myPDALib.pinMode(LeftEncPin,myPDALib.INPUT)
+  myPDALib.pinMode(RightEncPin,myPDALib.INPUT)
 
   # try with pullups  no effect
-  #PDALib.setDioBit( PDALib.DIO_GPPU, LeftEncDioBit ) 
-  #PDALib.setDioBit( PDALib.DIO_GPPU, RightEncDioBit )
+  #myPDALib.setDioBit( myPDALib.DIO_GPPU, LeftEncDioBit ) 
+  #myPDALib.setDioBit( myPDALib.DIO_GPPU, RightEncDioBit )
   
 
-  # Interrupt PortB (MCP23S17 pin19) is wired to PDALib pin 4  Servo pin 5 (1..8)
+  # Interrupt PortB (MCP23S17 pin19) is wired to myPDALib pin 4  Servo pin 5 (1..8)
   # set as an input to Raspberry Pi - can also read it with interruptState()
-  PDALib.pinMode(InterruptPin,PDALib.INPUT)
+  myPDALib.pinMode(InterruptPin,myPDALib.INPUT)
 
   reset()
+  initialized = True
 
 def enable_encoder_interrupts():
+
+    if not initialized: init()
 
     # encoders->MCP23S17 PortB->PortB interrupt->Pi GPIO (pigpiod)
     # pigpiod calls encoders.callback() when interrupt (active-low)
@@ -65,13 +95,13 @@ def enable_encoder_interrupts():
     # Set MCP23S17 interrupt-on-on change for each encoder
     # to compare against prior value (not use DEFVAL register)
     #
-    PDALib.clearDioBit( myPDALib.DIO_INTCON, LeftEncDioBit ) 
-    PDALib.clearDioBit( myPDALib.DIO_INTCON, RightEncDioBit ) 
+    myPDALib.clearDioBit( myPDALib.DIO_INTCON, LeftEncDioBit ) 
+    myPDALib.clearDioBit( myPDALib.DIO_INTCON, RightEncDioBit ) 
 
     # Set MCP23S17 interrupt pin active-low polarity (default, but make sure)
-    if (debugLevel > 0): print "before set: DIO_IOCON 0x%x" % PDALib.readDio(myPDALib.DIO_IOCON)
-    PDALib.clearDioBit( myPDALib.DIO_IOCON, myPDALib.DIO_INTPOLbit ) 
-    if (debugLevel > 0): print "after set: DIO_IOCON 0x%x" % PDALib.readDio(myPDALib.DIO_IOCON)
+    if (debugLevel > 0): print "before set: DIO_IOCON 0x%x" % myPDALib.readDio(myPDALib.DIO_IOCON)
+    myPDALib.clearDioBit( myPDALib.DIO_IOCON, myPDALib.DIO_INTPOLbit ) 
+    if (debugLevel > 0): print "after set: DIO_IOCON 0x%x" % myPDALib.readDio(myPDALib.DIO_IOCON)
 
 
     reset()
@@ -80,16 +110,16 @@ def enable_encoder_interrupts():
     myPDALib.setCallback(InterruptPin,myPDALib.FALLING_EDGE,callback)
 
     # Enable MCP23S17 interrupt for each encoder
-    PDALib.setDioBit( myPDALib.DIO_INTEN, LeftEncDioBit ) 
-    PDALib.setDioBit( myPDALib.DIO_INTEN, RightEncDioBit ) 
+    myPDALib.setDioBit( myPDALib.DIO_INTEN, LeftEncDioBit ) 
+    myPDALib.setDioBit( myPDALib.DIO_INTEN, RightEncDioBit ) 
 
 
 
 def disable_encoder_interrupts():
     # Disable MCP23S17 interrupt for each encoder
     if (debugLevel > 0): print "disable_encoder_interrupts called"
-    PDALib.clearDioBit( myPDALib.DIO_INTEN, LeftEncDioBit ) 
-    PDALib.clearDioBit( myPDALib.DIO_INTEN, RightEncDioBit ) 
+    myPDALib.clearDioBit( myPDALib.DIO_INTEN, LeftEncDioBit ) 
+    myPDALib.clearDioBit( myPDALib.DIO_INTEN, RightEncDioBit ) 
     
     # disable GPIO / pigpio interrupt callback
     myPDALib.clearCallback()
@@ -119,7 +149,7 @@ def callback(gpio=None,level=None,tick=None):
  
   #with encoderLock:  
     reentry +=1
-    if reentry>1: print "!!!!!!!!!!! callback reentry !!!!!!!!!!!!!!"
+    if reentry>1: print "!!!!!!!!!!! encoder callback reentry !!!!!!!!!!!!!!"
     if (debugLevel > 0): print "\ncallback: encoders callback",datetime.now()
     while interruptState() == 0:
         # time.sleep(debounceWait)  # delay after interrupt to debounce   
@@ -160,14 +190,14 @@ def cancel():
 
 
 
-def reset():
+def reset():         # set left,right encoder counts to zero
     global _leftEncState,  _lastLeftEncState,  _leftEncCount
     global _rightEncState, _lastRightEncState, _rightEncCount
     global _bias
 
     if (debugLevel > 0): print "encoders.reset() called"
-    _leftEncState=PDALib.digitalRead(LeftEncPin)
-    _rightEncState=PDALib.digitalRead(RightEncPin)
+    _leftEncState=myPDALib.digitalRead(LeftEncPin)
+    _rightEncState=myPDALib.digitalRead(RightEncPin)
 
     if (debugLevel > 0): print ("reset(): left %d right %d" % (_leftEncState, _rightEncState))
 
@@ -189,6 +219,7 @@ def reset():
         time.sleep(0.01)
         if (debugLevel > 0): print ("reset(): interruptState %d" % interruptState())
 
+    setInitialCounts()      # reset distance traveled counters
 
 
         
@@ -198,8 +229,8 @@ def readEncoders():
     global _rightEncState, _lastRightEncState, _rightEncCount
     global _bias
 
-    _leftEncState=PDALib.digitalRead(LeftEncPin)
-    _rightEncState=PDALib.digitalRead(RightEncPin)
+    _leftEncState=myPDALib.digitalRead(LeftEncPin)
+    _rightEncState=myPDALib.digitalRead(RightEncPin)
 
     if (_leftEncState != _lastLeftEncState):
         if (debugLevel > 0): print ("readEncoders: before inc left count: %d" % _leftEncCount)
@@ -238,7 +269,7 @@ def bias():
 
 def interruptState():
   global _interruptState
-  _interruptState = PDALib.digitalRead(InterruptPin)
+  _interruptState = myPDALib.digitalRead(InterruptPin)
   return _interruptState
   
 def printStatus():
@@ -249,22 +280,12 @@ def printStatus():
     else: print "    interruptState: NOT ACTIVE"
 
 
-# ##### MAIN ######
-def main():
-
-  myPyLib.set_cntl_c_handler(cancel)  # Set CNTL-C handler 
-  initialLeftCount = 0  # place to store the counter value when starting motion
-  initialRightCount = 0
-  initialMeanCount = 0
-
-  # ### encoder methods
-
-  def setInitialCounts():
+def setInitialCounts():
     initialLeftCount=leftCount()
     initialRightCount=rightCount()
     initialMeanCount=(initialLeftCount+initialRightCount)/2.0 
 
-  def distanceTraveled():
+def distanceTraveled():
     currentLeftCount = leftCount()
     currentRightCount = rightCount()
     currentMeanCount = ( currentLeftCount + currentRightCount) / 2.0
@@ -272,30 +293,26 @@ def main():
     distance=countsTraveled * InchesPerCount
     return distance
 
+dummy=init()        # initialize encoder pins when module is imported
+
+# ##### MAIN ######
+def main():
+  print "encoders.main:  Encoders.py main() Started"
+  sleepTime=10
+  myPyLib.set_cntl_c_handler(cancel)  # Set CNTL-C handler 
 
   try:
-    init()
     enable_encoder_interrupts()
-    setInitialCounts()
     
     # Loop displaying encoder values
     while True:
-        print "\n"
+        print "\nencoders.main: encoders reset()"
+        reset()
+        print "encoders.main: sleep(%d)" % sleepTime
+        time.sleep(sleepTime)
         printStatus()
-        time.sleep(0.5)
-        print "Distance Traveled: %.1f inches" % distanceTraveled()
+        print "    Distance Traveled: %.1f inches" % distanceTraveled()
         
-        #if (interruptState() == 0) : 
-            #print "\nmain: ***** INTERRUPT ACTIVE LOW"
-
-            #print ("main: intOnPin(): 0x%x"% intOnPin)
-            #callback()
-
-            #print "\n"
-            #printStatus()
-     
-            
-    #end while
   except SystemExit:  
       myPDALib.PiExit()
       print "encoders Test Main shutting down"
