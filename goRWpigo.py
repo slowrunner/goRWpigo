@@ -8,7 +8,7 @@ import random   # to simulate until implemented
 from mylibs import myPyLib
 from enum import Enum
 
-debugLevel = 1                  # 0=off 1=some  99=all
+debugLevel = 0                  # 0=off 1=some  99=all
 
 
 # GoPiGo API
@@ -64,7 +64,7 @@ debugLevel = 1                  # 0=off 1=some  99=all
 
 # enable_servo(): Enables the servo
 # disable_servo(): Disables the servo
-# servo(angle): Set servo position  Left 180 - 0 Right
+# servo(angle): Set servo position  Left 0 - 180 Right
 
 
 # ### Status from the GoPiGo:

@@ -64,7 +64,7 @@ debugLevel = 0		# 0 off, 1 some, 99 all
 
 # enable_servo(): Enables the servo
 # disable_servo(): Disables the servo
-# servo(angle): Set servo position  Left 180 - 0 Right
+# servo(angle): Set servo position  Left 0 - 180 Right
 
 
 # ### Status from the GoPiGo:
@@ -586,13 +586,13 @@ PanPosLimitL = 2400
 PanPosCenter = 1450
 PanPosLimitR =  600
 
-PanDegLimitL = 180
+PanDegLimitL =   0
 PanDegCenter =  90
-PanDegLimitR =   0
+PanDegLimitR = 180
 
 # pre calculate one deg angle equals how many "pos" increments
-PanDeg2PanPosInc = int((PanPosLimitL-PanPosLimitR) / float(PanDegLimitL-PanDegLimitR))
-Pan0Deg2PanPos = PanDeg2PanPosInc * -180 + PanPosLimitL
+PanDeg2PanPosInc = int((PanPosLimitR-PanPosLimitL) / float(PanDegLimitR-PanDegLimitL))
+Pan180Deg2PanPos = PanDeg2PanPosInc * -180 + PanPosLimitR
 
 
 TiltPosLimitUp = 500
@@ -644,14 +644,14 @@ def pos_servo(servo,pos):
     return cpos
 
 def gopigoDeg2panPos(angle):
-    pos = angle*PanDeg2PanPosInc + Pan0Deg2PanPos
+    pos = angle*PanDeg2PanPosInc + Pan180Deg2PanPos
     if (debugLevel):
         print "rwp:gopigoDeg2panPos(angle=%d) called" % angle
         print "rwp:gopigoDeg2panPos: returning pos:",pos
     return pos
 
 def rwpPos2gopigoPanDeg(pos):
-    angle = (pos - Pan0Deg2PanPos)/PanDeg2PanPosInc
+    angle = (pos - Pan180Deg2PanPos)/PanDeg2PanPosInc
     if (debugLevel):
         print "rwp:rwpPos2gopioPanDeg(pos=%d) called" % pos
         print "rwp:rwpPos2gopioPanDeg: returning angle:",angle
@@ -762,7 +762,7 @@ def main():
         elif key_press.isdigit():
             if int(key_press) in servo_range:
                 enable_servo()
-                servo((8-int(key_press))*30)
+                servo((int(key_press)-2)*30)
                 time.sleep(1)
                 disable_servo()
         elif key_press == 'v':
