@@ -88,11 +88,12 @@ debugLevel = 0		# 0 off, 1 some, 99 all
 # ################### IMPLEMENTATION #######
 rwp_speeds = [0,0]            # [left, right]
 rwp_edges_1_rev = 32          #  
-rwp_enc_tgt = [0,0,0]   
+rwp_enc_tgt = [0,0, rwp_edges_1_rev]  # [m1_enabled, m2_enabled, encoder_tgt] (default off, 1 rev)
 rwp_servo_angle = 0                                  
-rwp_com_timeout = 10000  
+rwp_com_timeout = 10000       # if don't get a command in this mSec, stop motions
 rwp_default_speed = 200       # this is equiv to 78% of max speed
 rwp_default_turn_speed = 110   # this is equiv to 10% of max speed
+rwp_enc_time_status = [0,0]    # 0 when condition met
 
  
 
@@ -244,8 +245,9 @@ def set_speed(speed=rwp_default_speed):    # Set speeds of both the motors
 # ### Encoder Functions:
 
 def enc_tgt(m1,m2,numEncPulses):    # Set encoder target to move the GoPiGo to a set distance
+    global rwp_enc_tgt
     if (debugLevel): print "rwp:  enc_tgt(m1=%d,m2=%d,numEncPulses=%d) called" % (m1,m2,numEncPulses)
-    gopigo_enc_tgt = [m1, m2, numEncPulses]
+    rwp_enc_tgt = [m1, m2, numEncPulses]
 	
 def enable_encoders():    # Enable the encoders
     if (debugLevel): print "rwp:  enable_encoders() called"
@@ -324,21 +326,21 @@ def disable_com_timeout():    # Disable communication time-out
     if (debugLevel): print "rwp:  disable_com_timeout() called"
 	
 def read_status():    # Read the status register on the GoPiGo
-    global gopigo_status
+    global rwp_enc_time_status
     if (debugLevel): print "rwp:  read_status() called"
-    return gopigo_status
+    return rwp_enc_time_status
 	
 def read_enc_status():    # Read encoder status
-    global gopigo_status
-    if (debugLevel): print "rwp:  read_enc_status() called"
-    return gopigo_status[0]
+    global rwp_enc_time_status
+    if (debugLevel): print "rwp:  read_enc_status() called, returning %i" % rwp_enc_time_status[0]
+    return rwp_enc_time_status[0]
 	
 
 
 def read_timeout_status():    # Read timeout status
-    global gopigo_status
-    if (debugLevel): print "rwp:  read_timeout_status() called"
-    return gopigo_status[1]
+    global rwp_enc_time_status
+    if (debugLevel): print "rwp:  read_timeout_status() called, returning %i" % rwp_enc_time_status[1]
+    return rwp_enc_time_status[1]
 	
     
 
